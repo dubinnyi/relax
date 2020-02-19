@@ -1,3 +1,7 @@
 *.todo
 *.pyc
+*_pairs.txt
+*.npy
+*.png
+__pycache__/
 config_tmp

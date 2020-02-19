@@ -1,0 +1,90 @@
+# -*- coding: utf-8 -*-
+
+# Form implementation generated from reading ui file 'set_view.ui'
+#
+# Created by: PyQt5 UI code generator 5.10.1
+#
+# WARNING! All changes made in this file will be lost!
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+class Ui_setWind(object):
+    def setupUi(self, SetWind):
+        SetWind.setObjectName("SetWind")
+        SetWind.resize(881, 482)
+        self.buttonBox = QtWidgets.QDialogButtonBox(SetWind)
+        self.buttonBox.setGeometry(QtCore.QRect(510, 420, 341, 32))
+        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setObjectName("buttonBox")
+        self.horizontalLayoutWidget = QtWidgets.QWidget(SetWind)
+        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 10, 861, 391))
+        self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
+        self.horizontalLayout = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget)
+        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.TrajList = QtWidgets.QListWidget(self.horizontalLayoutWidget)
+        self.TrajList.setObjectName("TrajList")
+        self.verticalLayout_3.addWidget(self.TrajList)
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.TAll = QtWidgets.QPushButton(self.horizontalLayoutWidget)
+        self.TAll.setObjectName("TAll")
+        self.horizontalLayout_2.addWidget(self.TAll)
+        self.TNone = QtWidgets.QPushButton(self.horizontalLayoutWidget)
+        self.TNone.setObjectName("TNone")
+        self.horizontalLayout_2.addWidget(self.TNone)
+        self.verticalLayout_3.addLayout(self.horizontalLayout_2)
+        self.horizontalLayout.addLayout(self.verticalLayout_3)
+        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.TcfList = QtWidgets.QListWidget(self.horizontalLayoutWidget)
+        self.TcfList.setObjectName("TcfList")
+        self.verticalLayout.addWidget(self.TcfList)
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        self.CfAll = QtWidgets.QPushButton(self.horizontalLayoutWidget)
+        self.CfAll.setObjectName("CfAll")
+        self.horizontalLayout_4.addWidget(self.CfAll)
+        self.CfNone = QtWidgets.QPushButton(self.horizontalLayoutWidget)
+        self.CfNone.setObjectName("CfNone")
+        self.horizontalLayout_4.addWidget(self.CfNone)
+        self.verticalLayout.addLayout(self.horizontalLayout_4)
+        self.horizontalLayout.addLayout(self.verticalLayout)
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.GroupList = QtWidgets.QListWidget(self.horizontalLayoutWidget)
+        self.GroupList.setObjectName("GroupList")
+        self.verticalLayout_2.addWidget(self.GroupList)
+        self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.GAll = QtWidgets.QPushButton(self.horizontalLayoutWidget)
+        self.GAll.setObjectName("GAll")
+        self.horizontalLayout_3.addWidget(self.GAll)
+        self.GNone = QtWidgets.QPushButton(self.horizontalLayoutWidget)
+        self.GNone.setObjectName("GNone")
+        self.horizontalLayout_3.addWidget(self.GNone)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_3)
+        self.horizontalLayout.addLayout(self.verticalLayout_2)
+        self.ExtractButton = QtWidgets.QPushButton(SetWind)
+        self.ExtractButton.setGeometry(QtCore.QRect(590, 420, 89, 25))
+        self.ExtractButton.setObjectName("ExtractButton")
+
+        self.retranslateUi(SetWind)
+        self.buttonBox.accepted.connect(SetWind.accept)
+        self.buttonBox.rejected.connect(SetWind.reject)
+        QtCore.QMetaObject.connectSlotsByName(SetWind)
+
+    def retranslateUi(self, SetWind):
+        _translate = QtCore.QCoreApplication.translate
+        SetWind.setWindowTitle(_translate("SetWind", "Dialog"))
+        self.TAll.setText(_translate("SetWind", "All"))
+        self.TNone.setText(_translate("SetWind", "None"))
+        self.CfAll.setText(_translate("SetWind", "All"))
+        self.CfNone.setText(_translate("SetWind", "None"))
+        self.GAll.setText(_translate("SetWind", "All"))
+        self.GNone.setText(_translate("SetWind", "None"))
+        self.ExtractButton.setText(_translate("SetWind", "Extract"))
+

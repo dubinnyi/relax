@@ -10,11 +10,12 @@ def exp(x, A, T):
 
 class CModel(Model):
     """docstring for CModel"""
-    def __init__(self, nexp=0):
+    def __init__(self, nexp=0, moddef=" "):
+        self.definition = moddef
         self.model = ConstantModel()
         self.nexp = 0
         self.errors = None
-        self.model_fit = None
+        self.res = None
         for _ in range(nexp):
             self.add_exp()
 
@@ -42,30 +43,21 @@ class CModel(Model):
 
     def fit(self, *args, **kwargs):
         try:
-            res = self.model.fit(*args, **kwargs)
-            self.model_fit = res
+            self.res = self.model.fit(*args, **kwargs)
         except Exception as e:
             print("Undefined exception while fit: {} {}".format(type(e), e))
             raise
-        return self
+        return self.res
 
-    def check_errs(self):
-        model_fit = self.model_fit
-        try:
-            covar = model_fit.covar
-            if covar is None or np.isnan(np.sum(covar)):
-                return True
-            self.errors = np.sqrt(np.diag(model_fit.covar))
-            for (param, val), err in zip(model_fit.best_values.items(), self.errors):
-                if val < err:
-                    return True
+    def has_covar(self):
+        covar = self.res.covar
+        if covar is None or np.isnan(np.sum(covar)):
             return False
-        except Exception as e:
-            print("Undefined exception while check: {} {}".format(type(e), e))
-            raise
+        else:
+            return True
 
     def report(self):
-        return self.model_fit.fit_report(), self.model_fit.covar
+        return self.res.fit_report(), self.res.covar
 
 
 Prefixes = {
