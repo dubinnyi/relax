@@ -134,8 +134,8 @@ class hdfAPI(File):
                         if smarts != group['smarts'][()]:
                             raise Exception("ERROR!! smarts are not equal")
                 return True
-            except Exception as e:
-                return False
+        except Exception as e:
+            return False
 
     def check_file(self):
         if self.cmp_t() and self.cmp_groups():
