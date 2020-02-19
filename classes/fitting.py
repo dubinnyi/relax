@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from exp_model import CModel
+from classes.exp_model import CModel
 
 BASE_VAL = np.array([0.1, 1, 0.01, 10, 0.01, 50, 0.01, 100, 0.01, 1000, 0.01, 3000, 0.01])
 BASE_KEY = ['c', 'adecay', 'aamplitude', 'bdecay', 'bamplitude', 'cdecay', 'camplitude', 'ddecay', 'damplitude', 'edecay', 'eamplitude', 'fdecay', 'famplitude']
@@ -52,6 +52,7 @@ class Fitting:
             self._fit(self.init_values)
             if not self.model.has_covar():
                 self.change_init()
+
             # elif self.nexp == 6 and self.model.has_covar() and self.tmp.chisqr < 1:
             #      self.change_init()
             else:
@@ -59,7 +60,8 @@ class Fitting:
         return False
 
     def change_init(self):
-        new_val = BASE_VAL * np.random.uniform(.2, 5)
+        new_val = BASE_VAL
+        new_val[1::2] = BASE_VAL[1::2] * np.random.uniform(.2, 5)
         self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], new_val[:(2*self.nexp + 1)]))
 
     def plot_fit(self, name):
