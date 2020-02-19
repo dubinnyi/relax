@@ -8,8 +8,10 @@ from argparse import ArgumentParser
 
 
 def ex_TcfNpy(file, output, tcf, gname = '', mean=False):
+    ownfile = False
     if not hasattr(file, 'read'):
         file = hdfAPI(file, 'r')
+        ownfile = True
 
     fd = open(output + '.npy', 'wb')
     fd2 = open(output + '_pairs.txt', 'a')
@@ -32,6 +34,8 @@ def ex_TcfNpy(file, output, tcf, gname = '', mean=False):
         print(names, file=fd2)
     fd.close()
     fd2.close()
+    if ownfile:
+        file.close()
 
 def main():
     parser = ArgumentParser()

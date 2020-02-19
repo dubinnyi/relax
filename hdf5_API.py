@@ -28,7 +28,7 @@ class hdfAPI(File):
                 for tcf in ['acf', 'ccf']:
                     return item[tcf]
 
-    def group_iter(self, tcf='', gname='', all=True):
+    def group_iter(self, tcf='', gname='', all=False):
         if not all:
             trj = self._get_zeroTrj()
             if gname in trj[tcf].keys():
@@ -103,38 +103,45 @@ class hdfAPI(File):
         for item in self.tcf_iter():
             if not np.array_equal(arr, item['t']):
                 print("ERROR!! time arrays are not equal!")
+                return False
+        return True
 
     def cmp_groups(self):
-        for tcf in ['acf', 'ccf']:
-            groups = self.get_groupList(tcf)
-            for key, item in self.trj_iter():
-                glist = self.get_groupList(tcf, key)
-                if not groups == glist:
-                    print("ERROR!! group names are not equal")
-            # raise Exception('bla-bla-bla')
-            for gname in groups:
-                # get atoms, cf, gs, names, smarts
-                g = self._get_zeroGroup(tcf, gname)
-                atoms = g['atoms'][()]
-                cf = g['cf']
-                gs = g['group_size']
-                names = g['names'][()]
-                smarts = g['smarts'][()]
-                for group in self.group_iter(tcf, gname):
-                    if atoms != group['atoms'][()]:
-                        print("ERROR!! atoms are not equal")
-                    if cf.shape != group['cf'].shape:
-                        print("ERROR!! cf are not equal")
-                    if names != group['names'][()]:
-                        print("ERROR!! names are not equal")
-                    if smarts != group['smarts'][()]:
-                        print("ERROR!! smarts are not equal")
+        try:
+            for tcf in ['acf', 'ccf']:
+                groups = self.get_groupList(tcf)
+                for key, item in self.trj_iter():
+                    glist = self.get_groupList(tcf, key)
+                    if not groups == glist:
+                        print("ERROR!! group names are not equal")
+                for gname in groups:
+                    # get atoms, cf, gs, names, smarts
+                    g = self._get_zeroGroup(tcf, gname)
+                    atoms = g['atoms'][()]
+                    cf = g['cf']
+                    gs = g['group_size']
+                    names = g['names'][()]
+                    smarts = g['smarts'][()]
+                    for group in self.group_iter(tcf, gname):
+                        if atoms != group['atoms'][()]:
+                            raise Exception("ERROR!! atoms are not equal")
+                        if cf.shape != group['cf'].shape:
+                            raise Exception("ERROR!! cf are not equal")
+                        if gs != group['group_size']:
+                            raise Exception("ERROR!! group size are not equal")
+                        if names != group['names'][()]:
+                            raise Exception("ERROR!! names are not equal")
+                        if smarts != group['smarts'][()]:
+                            raise Exception("ERROR!! smarts are not equal")
+                return True
+            except Exception:
+                return False
 
     def check_file(self):
-        # self.get_TrjInfo()
-        self.cmp_t()
-        self.cmp_groups()
-        print("checked")
+        if self.cmp_t() and self.cmp_groups():
+            return True
+        else:
+            return False
 
     ### Manipulation
 
