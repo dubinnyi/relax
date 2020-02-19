@@ -4,8 +4,8 @@ import sys
 import numpy as np
 import lmfit as lm
 
-from fitting import Fitting
-from exp_model import CModel
+from classes.fitting import Fitting
+from classes.exp_model import CModel
 from argparse import ArgumentParser
 
 
