@@ -1,8 +1,8 @@
-import fitting as f
+import classes.fitting as f
 import numpy as np
 
 from argparse import ArgumentParser
-from exp_model import CModel
+from classes.exp_model import CModel
 
 
 parser = ArgumentParser()
