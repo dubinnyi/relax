@@ -1,4 +1,5 @@
 import numpy as np
+import copy as c
 import matplotlib.pyplot as plt
 
 from classes.exp_model import CModel
@@ -17,13 +18,18 @@ class Fitting:
         self.time = step
         self.init_values = None
         self.nexp = 0
+        self.ntry = 5
 
         self.tmp = None
+
+        self.best_params = []
+        self.covar = []
+        self.stats = []
 
     def add_model(self, nexp):
         self.nexp = nexp
         self.model = CModel(nexp)
-        self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], BASE_VAL[:(2*self.nexp + 1)]))
+        self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], c.copy(BASE_VAL[:(2*self.nexp + 1)])))
 
     def _fit(self, init_values=None):
         #if self.model.nexp > 4:
@@ -37,31 +43,47 @@ class Fitting:
         self.tmp = self.model.fit(y, self.params, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values)
 
     def fit(self, init_values=None):
-        while (self.fit10()):
-            self.res = self.tmp
+        while self.fit10():
+            if not self.res:
+                self.res = self.tmp
+
+            elif self.res.chisqr > self.tmp.chisqr:
+                self.res = self.tmp
+
             if self.nexp == 6:
+                print('res:', self.res.chisqr)
+                self.save_res()
                 return self.res
             self.model.add_exp()
             self.nexp += 1
-            self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], BASE_VAL[:(2*self.nexp + 1)]))
+            self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], c.copy(BASE_VAL[:(2*self.nexp + 1)])))
         return self.res
 
 
     def fit10(self):
-        for _ in range(10):
+        # print('nexp: ', self.nexp)
+
+        curFit = None
+
+        for _ in range(self.ntry):
             self._fit(self.init_values)
             if not self.model.has_covar():
-                self.change_init()
+                pass
+            elif not curFit:
+                curFit = self.tmp
+            elif curFit and curFit.chisqr > self.tmp.chisqr:
+                curFit = self.tmp
 
-            # elif self.nexp == 6 and self.model.has_covar() and self.tmp.chisqr < 1:
-            #      self.change_init()
-            else:
-                return True
-        return False
+            if curFit:
+                # pass
+                print(self.tmp.chisqr, curFit.chisqr)
+            self.change_init()
+        # self.tmp = curFit
+        return True
 
     def change_init(self):
-        new_val = BASE_VAL
-        new_val[1::2] = BASE_VAL[1::2] * np.random.uniform(.2, 5)
+        new_val = c.copy(BASE_VAL)
+        new_val[1::2] = new_val[1::2] * np.random.uniform(.2, 5)
         self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], new_val[:(2*self.nexp + 1)]))
 
     def plot_fit(self, name):
@@ -100,3 +122,22 @@ class Fitting:
 
     def get_result(self):
         return self.res.report()
+
+    def save_res(self):
+        print(self.res.best_values)
+        self.best_params.append(self.res.best_values)
+        self.covar.append(self.res.covar)
+        self.stats.append({ 'chi-square': self.res.chisqr,
+                            'reduced chi-square': self.res.redchi,
+                            'Akaike info crit' : self.res.aic,
+                            'Bayesian info crit' : self.res.bic})
+
+    def save_toFile(self, filename):
+        fd = open(filename + '.npy', 'wb')
+        # print(self.best_params)
+        np.save(fd, self.best_params)
+        np.save(fd, self.covar)
+        np.save(fd, self.stats)
+        fd.close()
+
+
