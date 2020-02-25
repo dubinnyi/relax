@@ -7,29 +7,42 @@ from classes.exp_model import CModel
 BASE_VAL = np.array([0.1, 1, 0.01, 10, 0.01, 50, 0.01, 100, 0.01, 1000, 0.01, 3000, 0.01])
 BASE_KEY = ['c', 'adecay', 'aamplitude', 'bdecay', 'bamplitude', 'cdecay', 'camplitude', 'ddecay', 'damplitude', 'edecay', 'eamplitude', 'fdecay', 'famplitude']
 
-class Fitting:
-    """docstring for Accf"""
-    def __init__(self, data, std, step):
-        self.data = data
-        self.std = std
-        self.res = None
-        self.model = None
-        self.params = None
-        self.time = step
-        self.init_values = None
-        self.nexp = 0
-        self.ntry = 5
+rndmizer = np.random.RandomState()
 
-        self.tmp = None
+class Fitting:
+    def __init__(self, minexp=4, maxexp=6, randFactor=(.2, 5), ntry=5):
+        self.model = None
+        self.ntry  = ntry
+        self.randFactor  = randFactor
+        self.expInterval = (minexp, maxexp)
+
+        self.data = None
+        self.std  = None
+        self.time = None
+
+        self.nexp = 0
+        self.params  = None
+        self.lastFit = None
+        self.init_values = None
+
+        self.res = None
+        self.succes = False
 
         self.best_params = []
         self.covar = []
         self.stats = []
 
-    def add_model(self, nexp):
-        self.nexp = nexp
-        self.model = CModel(nexp)
+    def prep_model(self):
+        self.nexp = self.expInterval[0]
+        self.model = CModel(self.expInterval[0])
         self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], c.copy(BASE_VAL[:(2*self.nexp + 1)])))
+
+    def fit(self, mode='NexpNtry', *args, **kwargs):
+        self.clear()
+        if mode == 'NexpNtry':
+            self.fit_NtryNexp(*args, **kwargs)
+        else:
+            print('You choose wrong mode')
 
     def _fit(self, init_values=None):
         #if self.model.nexp > 4:
@@ -39,30 +52,32 @@ class Fitting:
         length = y.shape[0]
         x = self.time
         #################
-        self.params = self.model.prep_params()
-        self.tmp = self.model.fit(y, self.params, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values)
+        self.lastFit = self.model.fit(y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values)
 
-    def fit(self, init_values=None):
-        while self.fit10():
+    def fit_NtryNexp(self, data, std, timeline, init_values=None):
+        self.data = data
+        self.std = std
+        self.time = timeline
+        self.prep_model()
+
+        for self.nexp in range(self.expInterval[0], self.expInterval[1] + 1):
+            self.fit_ntry()
             if not self.res:
-                self.res = self.tmp
+                self.res = self.lastFit
 
-            elif self.res.chisqr > self.tmp.chisqr:
-                self.res = self.tmp
+            elif self.res.chisqr > self.lastFit.chisqr:
+                self.res = self.lastFit
 
-            if self.nexp == 6:
+            if self.nexp == self.expInterval[1]:
                 print('res:', self.res.chisqr)
                 self.save_res()
                 return self.res
+
             self.model.add_exp()
-            self.nexp += 1
             self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], c.copy(BASE_VAL[:(2*self.nexp + 1)])))
         return self.res
 
-
-    def fit10(self):
-        # print('nexp: ', self.nexp)
-
+    def fit_ntry(self):
         curFit = None
 
         for _ in range(self.ntry):
@@ -70,20 +85,21 @@ class Fitting:
             if not self.model.has_covar():
                 pass
             elif not curFit:
-                curFit = self.tmp
-            elif curFit and curFit.chisqr > self.tmp.chisqr:
-                curFit = self.tmp
+                curFit = self.lastFit
+            elif curFit and curFit.chisqr > self.lastFit.chisqr:
+                curFit = self.lastFit
 
             if curFit:
-                # pass
-                print(self.tmp.chisqr, curFit.chisqr)
+                self.succes = True
+                print(self.lastFit.chisqr, curFit.chisqr)
             self.change_init()
-        # self.tmp = curFit
-        return True
+
+        self.lastFit = curFit
 
     def change_init(self):
+        rndmizer.seed()
         new_val = c.copy(BASE_VAL)
-        new_val[1::2] = new_val[1::2] * np.random.uniform(.2, 5)
+        new_val[1::2] = new_val[1::2] * rndmizer.uniform(*self.randFactor)
         self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], new_val[:(2*self.nexp + 1)]))
 
     def plot_fit(self, name):
@@ -140,4 +156,15 @@ class Fitting:
         np.save(fd, self.stats)
         fd.close()
 
+    def clear(self):
+        self.data = None
+        self.std = None
+        self.time = None
 
+        self.nexp = 0
+        self.res = None
+        self.params = None
+        self.init_values = None
+        self.lastFit = None
+
+        self.succes = False
