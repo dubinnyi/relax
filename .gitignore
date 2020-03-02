@@ -1,5 +1,10 @@
 *.todo
 *.pyc
+
+__pycache__/
+
+# Data Files
+
 *.npy
 *.png
-config_tmp
+*.hdf5
