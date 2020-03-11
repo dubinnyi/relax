@@ -3,6 +3,7 @@ import sys
 import h5py
 
 import numpy as np
+import utils as u
 
 
 class Data:
@@ -55,6 +56,15 @@ class Data:
         self.ntrace = len(traces)
 
     # Iterators
+
+
+    # Readers
+
+    def read_fromFile(self, file, ftype, fields=None):
+        fid, own_fid = u.get_fid(file, ftype, 'r')
+
+
+
 
 
 

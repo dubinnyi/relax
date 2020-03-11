@@ -3,6 +3,7 @@ import sys
 import h5py
 
 import numpy as np
+import utils as u
 
 
 class FitResult():
@@ -54,25 +55,7 @@ class FitResult():
 
     # type - type of file which would be used for saving [npy, hdf]
     def toFile(self, file, ftype='npy'):
-        own_fid = False
-        if isinstance(file, basestring):
-            if not file.endswith('.{}'.format(ftype)):
-                file = file + '.{}'.format(ftype)
-            if ftype == 'npy':
-                fid = open(file, "wb")
-            elif ftype == 'hdf5':
-                fid = h5py.File(file, 'w')
-            own_fid = True
-        elif is_pathlib_path(file):
-            if not file.name.endswith('.'.format(ftype)):
-                file = file.parent / (file.name + '.{}'.format(ftype))
-            if ftype == 'npy':
-                fid = file.open("wb")
-            elif ftype == 'hdf5':
-                fid = h5py.File(file, 'w')
-            own_fid = True
-        else:
-            fid = file
+        fid, own_fid = u.get_fid(file, ftype, 'w')
 
         if ftype == 'hdf5':
             self.save_hdf(fid)
