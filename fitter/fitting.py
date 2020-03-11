@@ -6,6 +6,7 @@ import copy as c
 import matplotlib.pyplot as plt
 
 from fitter.exp_model import CModel
+from fitter.fit_res import FitResult
 
 BASE_VAL = np.array([0.1, 1, 0.01, 10, 0.01, 50, 0.01, 100, 0.01, 1000, 0.01, 3000, 0.01])
 BASE_KEY = ['c', 'adecay', 'aamplitude', 'bdecay', 'bamplitude', 'cdecay', 'camplitude', 'ddecay', 'damplitude', 'edecay', 'eamplitude', 'fdecay', 'famplitude']
@@ -31,12 +32,13 @@ class Fitter:
         self.res = None
         self.succes = False
 
-        self.fileToSave = h5py.File('fit_result.hdf5', 'w')
+        self.bestResults = [None] * (maxexp - minexp)
 
     ## Setters
 
     def set_nexp(self, minexp, maxexp):
         self.expInterval = (minexp, maxexp)
+        self.bestResults = [None] * (maxexp - minexp)
         self.prep_model()
 
     def set_time(self, timeline=None, dt=None, nframe=None):
@@ -62,8 +64,6 @@ class Fitter:
         self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], c.copy(BASE_VAL[:(2*self.nexp + 1)])))
 
 
-
-
     def fit(self, mode='NexpNtry', gname, tcf, i, *args, **kwargs):
         self.clear()
         self.gname = gname
@@ -73,6 +73,8 @@ class Fitter:
             self.fit_NtryNexp(*args, **kwargs)
         else:
             print('ERROR!! You choose wrong mode', file=sys.stderr)
+
+        return self.bestResults
 
     def _fit(self, init_values=None):
         #if self.model.nexp > 4:
@@ -106,7 +108,8 @@ class Fitter:
                 print("ERROR!! res is None. It happend while fitting {} exponents. With those initial values: {}".format(self.nexp, self.init_values), file=sys.stderr)
                 self.succes = False
                 return
-
+            if self.succes:
+                self.save_result()
             self.model.add_exp()
             self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], c.copy(BASE_VAL[:(2*self.nexp + 1)])))
         return self.res
@@ -135,6 +138,16 @@ class Fitter:
         new_val = c.copy(BASE_VAL)
         new_val[1::2] = new_val[1::2] * rndmizer.uniform(*self.randFactor)
         self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], new_val[:(2*self.nexp + 1)]))
+
+    def save_result(self):
+        stats = {'aic': self.res.aic, 'chisqr': self.res.chisqr, 'bic': self.res.bic,
+                'redchi': self.res.redchi, 'trust_interval': self.res.ci_out}
+
+        data = {'model': self.res.model, 'params': self.res.best_values, 'stats': stats,
+                'covar': self.res.covar, 'init_values': self.res.init_values, 'nexp': self.nexp}
+        self.bestResults[self.nexp - self.expInterval[0]] = FitResult(**data)
+
+    # Savings and Results
 
     def plot_fit(self, name):
         fig = plt.figure(1)
@@ -183,5 +196,6 @@ class Fitter:
         self.params = None
         self.init_values = None
         self.lastFit = None
+        self.bestResults = [None] * (self.expInterval[1] - self.expInterval[0])
 
         self.succes = False
