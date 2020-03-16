@@ -28,7 +28,7 @@ class Data:
         # Data
         self.time = self.setTime(timeline, dt, nframe)
         self.dataCF = self.setData(data)
-        self.errors = errors
+        self.errors = self.setErrors(errors)
 
     # Setters
     def setTime(self, timeline=None, dt=None, nframe=None):
@@ -50,18 +50,36 @@ class Data:
             self.errors = errs.reshape(1, *errs.shape)
         else:
             self.errors = errs
+        self.errors[:, 0] = errors[:, 1]
 
     def setTraces(self, traces):
         self.traces = traces
         self.ntrace = len(traces)
 
     # Iterators
+    def iter(self):
+        for d, e in zip(self.data, self.errors):
+            yield d, e
+
+    # # Readers
+
+    # #
+    # # fields - list of fields which are present in file should be in order like in file
+    # # if None use standart order:
+    # # time, data, errs for npy and csv
+    # def read_fromFile(self, file, ftype, fields=None):
+    #     fid, own_fid = u.get_fid(file, ftype, 'r')
+    #     if ftype == 'npy':
+    #         self.time = fid.load()
+    #         self.data = fid.load()
+    #         self.errs = fid.load()
+    #     elif ftype == 'csv':
+    #         data = np.loadtxt(fid, delimiter=',')
+    #         self.time = data[:, 0].reshape()
+    #         self.data = data[:, 1]
+    #         self.errs = data[:, 2]
 
 
-    # Readers
-
-    def read_fromFile(self, file, ftype, fields=None):
-        fid, own_fid = u.get_fid(file, ftype, 'r')
 
 
 

@@ -64,15 +64,15 @@ class Fitter:
         self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], c.copy(BASE_VAL[:(2*self.nexp + 1)])))
 
 
-    def fit(self, mode='NexpNtry', gname, tcf, i, *args, **kwargs):
+    def fit(self, data, std, timeline, method='NexpNtry', *args, **kwargs):
         self.clear()
-        self.gname = gname
-        self.tcf = tcf
-        self.i = i
-        if mode == 'NexpNtry':
+        self.data = data
+        self.std = std
+        self.time = timeline
+        if method == 'NexpNtry':
             self.fit_NtryNexp(*args, **kwargs)
         else:
-            print('ERROR!! You choose wrong mode', file=sys.stderr)
+            print('ERROR!! You choose wrong method', file=sys.stderr)
 
         return self.bestResults
 
@@ -86,10 +86,7 @@ class Fitter:
         #################
         self.lastFit = self.model.fit(y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values)
 
-    def fit_NtryNexp(self, data, std, timeline, init_values=None):
-        self.data = data
-        self.std = std
-        self.time = timeline
+    def fit_NtryNexp(self, init_values=None):
         self.prep_model()
 
         for self.nexp in range(self.expInterval[0], self.expInterval[1] + 1):
@@ -115,23 +112,23 @@ class Fitter:
         return self.res
 
     def fit_ntry(self):
-        curFit = None
+        curBestFit = None
 
         for _ in range(self.ntry):
             self._fit(self.init_values)
             if not self.model.has_covar():
                 pass
-            elif not curFit:
-                curFit = self.lastFit
-            elif curFit and curFit.chisqr > self.lastFit.chisqr:
-                curFit = self.lastFit
+            elif not curBestFit:
+                curBestFit = self.lastFit
+            elif curBestFit and curBestFit.chisqr > self.lastFit.chisqr:
+                curBestFit = self.lastFit
 
-            if curFit:
+            if curBestFit:
                 self.succes = True
-                print(self.lastFit.chisqr, curFit.chisqr)
+                print(self.lastFit.chisqr, curBestFit.chisqr)
             self.change_init()
 
-        self.lastFit = curFit
+        self.lastFit = curBestFit
 
     def change_init(self):
         rndmizer.seed()

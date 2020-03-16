@@ -19,6 +19,7 @@ def main():
     parser.add_argument('-m', '--mode', default='NexpNtry', type=str)
     parser.add_argument('-g', '--group', help='Which group you want to fit. Need to fit data from hdf')
     parser.add_argument('--tcf', default='acf', help='Need to fit data from hdf')
+    parser.add_argument('-o', '--output', default='out.hdf5', help='filename with ending (npy, hdf5) for saving results')
     args = parser.parse_args()
 
     if args.type == 'npy':
@@ -51,23 +52,45 @@ def main():
 
     fitMod = Fitter()
 
+    fid = h5py.File(args.output, 'w')
+    grp = fid.create_group(args.group)
+    exp4 = grp.create_group('exp4')
+    exp5 = grp.create_group('exp5')
+    exp6 = grp.create_group('exp6')
+    exps = [exp4, exp5, exp6]
+    for exp_grp, i in zip(exps, range(4, 7)):
+        nparams = 2 * i + 1
+        exp_grp.create_dataset('params', data=np.zeros((data.shape[0], nparams)))
+        exp_grp.create_dataset('covar', data=np.zeros((data.shape[0], nparams, nparams)))
+        exp_grp.create_dataset('stats', data=np.zeros((data.shape[0], 4)))
+
+
+
     for i in range(start, data.shape[0]):
-    # for i in range(1):
+        bestRes = None
+
         if args.type == 'npy' or args.type == 'hdf':
-            fitMod.fit(args.mode, data[i], errs[i], time)
+            bestRes = fitMod.fit(data[i], errs[i], time, method=args.mode)
         elif args.type == 'csv':
-            fitMod.fit(args.mode, data, errs, time)
+            bestRes = fitMod.fit(data, errs, time, method=args.mode)
 
 
         if fitMod.succes:
             print(fitMod.model.res.fit_report())
             fitMod.plot_fit(i)
+            for group, res in zip(exps, bestRes):
+                # print(res.covar)
+                group['params'][i] = res.param_vals
+                group['covar'][i]  = res.best_covar
+                # group['stats'][i]  = res.stats
+
+
         else:
             print('Smth went wrong. There no fit')
             print('This happend on {} iteration'.format(i), file=sys.stderr)
 
         print('DONE')
-    fitMod.save_toFile('out')
+    # fitMod.save_toFile('out')
 
 if __name__ == '__main__':
     main()

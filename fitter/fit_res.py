@@ -12,7 +12,8 @@ class FitResult():
         self.model = model
         self.init_values = init_values
 
-        self.parameters = params
+        self.param_names = list(params.keys())
+        self.param_vals = np.array(list(params.values()))
         self.param_errs = None
 
         self.best_covar = covar

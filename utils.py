@@ -3,7 +3,7 @@ import h5py
 
 # ftype - [npy, hdf5, csv]
 # perm -  [w, r]
-def get_fid(file, ftype, perm)
+def get_fid(file, ftype, perm):
     own_fid = False
     if isinstance(file, basestring):
         if not file.endswith('.{}'.format(ftype)):
