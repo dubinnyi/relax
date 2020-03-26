@@ -52,7 +52,7 @@ def main():
 
             grp = fid.create_group(group)
             exps = []
-            for _, i in enumerate(fitMod.get_expInt()):
+            for _, i in enumerate(fitMod.get_expInterval()):
                 cexp = grp.create_group('exp{}'.format(i))
                 exps.append(cexp)
             for exp_grp, i in zip(exps, range(4, 7)):
@@ -73,18 +73,24 @@ def main():
 
 
             if fitMod.succes:
-                print(fitMod.model.res.fit_report())
-                # fitMod.plot_fit(i)
-                for group, res in zip(exps, bestRes):
-                    # print(res.covar)
-                    group['params'][i] = res.param_vals
-                    group['covar'][i]  = res.best_covar
-                    # group['stats'][i]  = res.stats
+                try:
+                    print(fitMod.model.res.fit_report())
+                    # fitMod.plot_fit(i)
+                    for group, res in zip(exps, bestRes):
+                        # print(res.covar)
+                        group['params'][i] = res.param_vals
+                        group['covar'][i]  = res.best_covar
+                        # group['stats'][i]  = res.stats
+                except Exception as e:
+                    print('ERROR!! Smth went wrong. There must not be any errors!', file=sys.stderr)
+                    print(type(e), e, file=sys.stderr)
+                    print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
+
 
 
             else:
-                print('Smth went wrong. There no fit')
-                print('This happend on {} iteration'.format(i), file=sys.stderr)
+                print('Smth went wrong. There no fit', file=sys.stderr)
+                print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
             print('DONE')
     # fitMod.save_toFile('out')
