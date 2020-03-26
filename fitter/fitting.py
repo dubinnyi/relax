@@ -36,7 +36,7 @@ class Fitter:
 
 
     ## Getters
-    def get_expInterval():
+    def get_expInterval(self):
         return self.expInterval
 
     ## Setters
