@@ -54,10 +54,10 @@ def main():
 
     fid = h5py.File(args.output, 'w')
     grp = fid.create_group(args.group)
-    exp4 = grp.create_group('exp4')
-    exp5 = grp.create_group('exp5')
-    exp6 = grp.create_group('exp6')
-    exps = [exp4, exp5, exp6]
+    exps = []
+    for _, i in enumerate(fitMod.get_expInt()):
+        cexp = grp.create_group('exp{}'.format(i))
+        exps.append(cexp)
     for exp_grp, i in zip(exps, range(4, 7)):
         nparams = 2 * i + 1
         exp_grp.create_dataset('params', data=np.zeros((data.shape[0], nparams)))
@@ -77,7 +77,7 @@ def main():
 
         if fitMod.succes:
             print(fitMod.model.res.fit_report())
-            fitMod.plot_fit(i)
+            # fitMod.plot_fit(i)
             for group, res in zip(exps, bestRes):
                 # print(res.covar)
                 group['params'][i] = res.param_vals

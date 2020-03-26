@@ -34,6 +34,11 @@ class Fitter:
 
         self.bestResults = [None] * (maxexp - minexp)
 
+
+    ## Getters
+    def get_expInterval():
+        return self.expInterval
+
     ## Setters
 
     def set_nexp(self, minexp, maxexp):

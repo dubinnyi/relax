@@ -26,9 +26,9 @@ class Data:
         self.rGroup = relaxGroup if relaxGroup else 'NaN'
 
         # Data
-        self.time = self.setTime(timeline, dt, nframe)
-        self.dataCF = self.setData(data)
-        self.errors = self.setErrors(errors)
+        self.setTime(timeline, dt, nframe)
+        self.setData(data)
+        self.setErrors(errors)
 
     # Setters
     def setTime(self, timeline=None, dt=None, nframe=None):
