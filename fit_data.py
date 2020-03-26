@@ -10,7 +10,6 @@ from fitter.exp_model import CModel
 from argparse import ArgumentParser
 
 
-
 def main():
     parser = ArgumentParser()
     parser.add_argument("filename", type=str)
@@ -21,13 +20,9 @@ def main():
     parser.add_argument('--tcf', default='acf', help='Need to fit data from hdf')
     parser.add_argument('-o', '--output', default='out.hdf5', help='filename with ending (npy, hdf5) for saving results')
     args = parser.parse_args()
-    print(args)
-
-    start = args.istart if args.istart < data.shape[0] else 0
 
     fitMod = Fitter()
     fid = h5py.File(args.output, 'w')
-
 
     for group in args.group:
         if args.type == 'npy':
@@ -66,6 +61,7 @@ def main():
                 exp_grp.create_dataset('covar', data=np.zeros((data.shape[0], nparams, nparams)))
                 exp_grp.create_dataset('stats', data=np.zeros((data.shape[0], 4)))
 
+        start = args.istart if args.istart < data.shape[0] else 0
 
         for i in range(start, data.shape[0]):
             bestRes = None
