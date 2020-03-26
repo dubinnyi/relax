@@ -17,10 +17,11 @@ def main():
     parser.add_argument('-t', '--type', default='npy', help="Type of using datafile. Can be: \'npy\', \'csv\', \'hdf\'")
     parser.add_argument('-i', '--istart', default=0, type=int)
     parser.add_argument('-m', '--mode', default='NexpNtry', type=str)
-    parser.add_argument('-g', '--group', help='Which group you want to fit. Need to fit data from hdf')
+    parser.add_argument('-g', '--group', nargs='*', default=[''], help='Which group you want to fit. Need to fit data from hdf')
     parser.add_argument('--tcf', default='acf', help='Need to fit data from hdf')
     parser.add_argument('-o', '--output', default='out.hdf5', help='filename with ending (npy, hdf5) for saving results')
     args = parser.parse_args()
+    print(args)
 
     if args.type == 'npy':
         fd = open(args.filename, 'rb')
@@ -47,49 +48,51 @@ def main():
 
         errs[:, 0] = errs[:, 1]
 
-
     start = args.istart if args.istart < data.shape[0] else 0
 
     fitMod = Fitter()
 
-    fid = h5py.File(args.output, 'w')
-    grp = fid.create_group(args.group)
-    exps = []
-    for _, i in enumerate(fitMod.get_expInt()):
-        cexp = grp.create_group('exp{}'.format(i))
-        exps.append(cexp)
-    for exp_grp, i in zip(exps, range(4, 7)):
-        nparams = 2 * i + 1
-        exp_grp.create_dataset('params', data=np.zeros((data.shape[0], nparams)))
-        exp_grp.create_dataset('covar', data=np.zeros((data.shape[0], nparams, nparams)))
-        exp_grp.create_dataset('stats', data=np.zeros((data.shape[0], 4)))
 
 
-
-    for i in range(start, data.shape[0]):
-        bestRes = None
-
-        if args.type == 'npy' or args.type == 'hdf':
-            bestRes = fitMod.fit(data[i], errs[i], time, method=args.mode)
-        elif args.type == 'csv':
-            bestRes = fitMod.fit(data, errs, time, method=args.mode)
-
-
-        if fitMod.succes:
-            print(fitMod.model.res.fit_report())
-            # fitMod.plot_fit(i)
-            for group, res in zip(exps, bestRes):
-                # print(res.covar)
-                group['params'][i] = res.param_vals
-                group['covar'][i]  = res.best_covar
-                # group['stats'][i]  = res.stats
+    for group in args.group:
+        if args.type == 'hdf':
+            fid = h5py.File(args.output, 'w')
+            grp = fid.create_group(group)
+            exps = []
+            for _, i in enumerate(fitMod.get_expInt()):
+                cexp = grp.create_group('exp{}'.format(i))
+                exps.append(cexp)
+            for exp_grp, i in zip(exps, range(4, 7)):
+                nparams = 2 * i + 1
+                exp_grp.create_dataset('params', data=np.zeros((data.shape[0], nparams)))
+                exp_grp.create_dataset('covar', data=np.zeros((data.shape[0], nparams, nparams)))
+                exp_grp.create_dataset('stats', data=np.zeros((data.shape[0], 4)))
 
 
-        else:
-            print('Smth went wrong. There no fit')
-            print('This happend on {} iteration'.format(i), file=sys.stderr)
+        for i in range(start, data.shape[0]):
+            bestRes = None
 
-        print('DONE')
+            if args.type == 'npy' or args.type == 'hdf':
+                bestRes = fitMod.fit(data[i], errs[i], time, method=args.mode)
+            elif args.type == 'csv':
+                bestRes = fitMod.fit(data, errs, time, method=args.mode)
+
+
+            if fitMod.succes:
+                print(fitMod.model.res.fit_report())
+                # fitMod.plot_fit(i)
+                for group, res in zip(exps, bestRes):
+                    # print(res.covar)
+                    group['params'][i] = res.param_vals
+                    group['covar'][i]  = res.best_covar
+                    # group['stats'][i]  = res.stats
+
+
+            else:
+                print('Smth went wrong. There no fit')
+                print('This happend on {} iteration'.format(i), file=sys.stderr)
+
+            print('DONE')
     # fitMod.save_toFile('out')
 
 if __name__ == '__main__':
