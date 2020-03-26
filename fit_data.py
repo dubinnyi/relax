@@ -23,40 +23,38 @@ def main():
     args = parser.parse_args()
     print(args)
 
-    if args.type == 'npy':
-        fd = open(args.filename, 'rb')
-
-        time = np.load(fd)
-        data = np.load(fd)
-        errs = np.load(fd)
-
-        errs[:, 0] = errs[:, 1]
-
-    elif args.type == 'csv':
-        data = np.loadtxt(args.filename, delimiter=',')
-        time = data[:, 0]
-        func = data[:, 1]
-        errs = np.sqrt(data[:, 2])
-        # ОЧЕНЬ ВАЖНО!!
-        errs[0] = errs[1]
-
-    elif args.type == 'hdf':
-        fd = h5py.File(args.filename, 'r')
-        time = fd['time'][:]
-        data = fd[args.group][args.tcf]['mean'][:]
-        errs = fd[args.group][args.tcf]['errs'][:]
-
-        errs[:, 0] = errs[:, 1]
-
     start = args.istart if args.istart < data.shape[0] else 0
 
     fitMod = Fitter()
-
+    fid = h5py.File(args.output, 'w')
 
 
     for group in args.group:
-        if args.type == 'hdf':
-            fid = h5py.File(args.output, 'w')
+        if args.type == 'npy':
+            fd = open(args.filename, 'rb')
+
+            time = np.load(fd)
+            data = np.load(fd)
+            errs = np.load(fd)
+
+            errs[:, 0] = errs[:, 1]
+
+        elif args.type == 'csv':
+            data = np.loadtxt(args.filename, delimiter=',')
+            time = data[:, 0]
+            func = data[:, 1]
+            errs = np.sqrt(data[:, 2])
+            # ОЧЕНЬ ВАЖНО!!
+            errs[0] = errs[1]
+
+        elif args.type == 'hdf':
+            fd = h5py.File(args.filename, 'r')
+            time = fd['time'][:]
+            data = fd[group][args.tcf]['mean'][:]
+            errs = fd[group][args.tcf]['errs'][:]
+
+            errs[:, 0] = errs[:, 1]
+
             grp = fid.create_group(group)
             exps = []
             for _, i in enumerate(fitMod.get_expInt()):
