@@ -28,19 +28,22 @@ class Fitter:
         self.params  = None
         self.lastFit = None
         self.init_values = None
+        self.lastSucces = False
 
         self.res = None
-        self.succes = False
 
         self.bestResults = [None] * (maxexp - minexp)
 
+    ## Iterators
+    def exp_iter(self):
+        for exp in range(self.expInterval[0], self.expInterval[1] + 1):
+            yield exp
 
     ## Getters
     def get_expInterval(self):
         return self.expInterval
 
     ## Setters
-
     def set_nexp(self, minexp, maxexp):
         self.expInterval = (minexp, maxexp)
         self.bestResults = [None] * (maxexp - minexp)
@@ -94,7 +97,7 @@ class Fitter:
     def fit_NtryNexp(self, init_values=None):
         self.prep_model()
 
-        for self.nexp in range(self.expInterval[0], self.expInterval[1] + 1):
+        for self.nexp in self.exp_iter():
             self.fit_ntry()
             try:
                 if not self.res:
@@ -108,10 +111,9 @@ class Fitter:
                     return self.res
             except AttributeError as e:
                 print("ERROR!! res is None. It happend while fitting {} exponents. With those initial values: {}".format(self.nexp, self.init_values), file=sys.stderr)
-                self.succes = False
+                self.lastSucces = False
                 return
-            if self.succes:
-                self.save_result()
+            self.save_result()
             self.model.add_exp()
             self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], c.copy(BASE_VAL[:(2*self.nexp + 1)])))
         return self.res
@@ -129,7 +131,7 @@ class Fitter:
                 curBestFit = self.lastFit
 
             if curBestFit:
-                self.succes = True
+                self.lastSucces = True
                 print(self.lastFit.chisqr, curBestFit.chisqr)
             self.change_init()
 
@@ -142,11 +144,15 @@ class Fitter:
         self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], new_val[:(2*self.nexp + 1)]))
 
     def save_result(self):
-        stats = {'aic': self.res.aic, 'chisqr': self.res.chisqr, 'bic': self.res.bic,
-                'redchi': self.res.redchi, 'trust_interval': self.res.ci_out}
+        if self.lastSucces:
+            stats = {'aic': self.res.aic, 'chisqr': self.res.chisqr, 'bic': self.res.bic,
+                    'redchi': self.res.redchi, 'trust_interval': self.res.ci_out}
 
-        data = {'model': self.res.model, 'params': self.res.best_values, 'stats': stats,
-                'covar': self.res.covar, 'init_values': self.res.init_values, 'nexp': self.nexp}
+            data = {'model': self.res.model, 'params': self.res.best_values,
+                    'stats': stats, 'covar': self.res.covar, 'succes': self.lastSucces,
+                    'init_values': self.res.init_values, 'nexp': self.nexp}
+        else:
+            data = {'succes': self.lastSucces}
         self.bestResults[self.nexp - self.expInterval[0]] = FitResult(**data)
 
     # Savings and Results
@@ -199,5 +205,3 @@ class Fitter:
         self.init_values = None
         self.lastFit = None
         self.bestResults = [None] * (self.expInterval[1] - self.expInterval[0])
-
-        self.succes = False

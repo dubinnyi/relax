@@ -7,7 +7,8 @@ import utils as u
 
 
 class FitResult():
-    def __init__(self, model=None, init_values=None, params=None, covar=None, stats=None, nexp=None):
+    def __init__(self, model=None, init_values=None, params=None,
+                 covar=None, stats=None, nexp=None, succes=None):
         self.nexp = nexp
         self.model = model
         self.init_values = init_values
@@ -18,6 +19,7 @@ class FitResult():
 
         self.best_covar = covar
         self.stats = stats
+        self.succes = succes
 
 
     def calc_paramErrs(self):

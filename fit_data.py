@@ -52,14 +52,13 @@ def main():
 
             grp = fid.create_group(group)
             exps = []
-            for _, i in enumerate(fitMod.get_expInterval()):
+            for i in fitMod.exp_iter():
                 cexp = grp.create_group('exp{}'.format(i))
                 exps.append(cexp)
             for exp_grp, i in zip(exps, range(4, 7)):
                 nparams = 2 * i + 1
                 exp_grp.create_dataset('params', data=np.zeros((data.shape[0], nparams)))
                 exp_grp.create_dataset('covar', data=np.zeros((data.shape[0], nparams, nparams)))
-                exp_grp.create_dataset('stats', data=np.zeros((data.shape[0], 4)))
 
         start = args.istart if args.istart < data.shape[0] else 0
 
@@ -72,24 +71,21 @@ def main():
                 bestRes = fitMod.fit(data, errs, time, method=args.mode)
 
 
-            if fitMod.succes:
-                try:
-                    print(fitMod.model.res.fit_report())
-                    # fitMod.plot_fit(i)
-                    for group, res in zip(exps, bestRes):
-                        # print(res.covar)
+            try:
+                print(fitMod.model.res.fit_report())
+                for group, res in zip(exps, bestRes):
+                    if bestRes.succes:
                         group['params'][i] = res.param_vals
                         group['covar'][i]  = res.best_covar
-                        # group['stats'][i]  = res.stats
-                except Exception as e:
-                    print('ERROR!! Smth went wrong. There must not be any errors!', file=sys.stderr)
-                    print(type(e), e, file=sys.stderr)
-                    print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
+                        for key, item in res.stats.items():
+                            group.attrs[key] = item
+                    else:
+                        print('Smth went wrong. There no fit', file=sys.stderr)
+                        print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
-
-
-            else:
-                print('Smth went wrong. There no fit', file=sys.stderr)
+            except Exception as e:
+                print('ERROR!! Smth went wrong. There must not be any errors!', file=sys.stderr)
+                print(type(e), e, file=sys.stderr)
                 print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
             print('DONE')
