@@ -20,7 +20,7 @@ def main():
     parser.add_argument('-m', '--method', default='NexpNtry', type=str)
     parser.add_argument('-g', '--group', nargs='*', default=[''], help='Which group you want to fit. Need to fit data from hdf')
     parser.add_argument('--tcf', default='acf', help='Need to fit data from hdf')
-    parser.add_argument('-o', '--output', default='out.hdf5', help='filename with ending (npy, hdf5) for saving results')
+    parser.add_argument('-o', '--output', default='out.hdf5', help='filename for saving results')
     args = parser.parse_args()
 
     counter = Counter()
@@ -70,6 +70,7 @@ def main():
 
         start = args.istart if args.istart < data.shape[0] else 0
         for i in range(start, data.shape[0]):
+            counter.set_curN(i)
             bestRes = None
 
             if args.type == 'npy' or args.type == 'hdf':
@@ -80,7 +81,6 @@ def main():
 
             try:
                 print(fitMod.model.res.fit_report())
-                print(counter.data)
                 if args.type != 'hdf':
                     continue
                 for group, res in zip(exps, bestRes):
@@ -100,6 +100,7 @@ def main():
 
             print('DONE')
     counter.save('fitStatistic.csv')
+    print(counter)
     # fitMod.save_toFile('out')
 
 if __name__ == '__main__':

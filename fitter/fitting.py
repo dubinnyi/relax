@@ -156,7 +156,6 @@ class Fitter:
         self.init_values = dict(zip(BASE_KEY[:(2*self.cexp + 1)], new_val[:(2*self.cexp + 1)]))
 
     def save_result(self):
-        print("Before saving: fit success is: {}; Has covar: {}".format(self.lastSuccess, self.model.has_covar()))
         if self.lastSuccess:
             stats = {'aic': self.res.aic, 'chisqr': self.res.chisqr, 'bic': self.res.bic,
                     'redchi': self.res.redchi, 'trust_interval': self.res.ci_out}
