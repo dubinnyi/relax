@@ -7,6 +7,8 @@ import lmfit as lm
 
 from fitter.fitting import Fitter
 from fitter.exp_model import CModel
+from counter import Counter
+
 from argparse import ArgumentParser
 
 
@@ -15,16 +17,20 @@ def main():
     parser.add_argument("filename", type=str)
     parser.add_argument('-t', '--type', default='npy', help="Type of using datafile. Can be: \'npy\', \'csv\', \'hdf\'")
     parser.add_argument('-i', '--istart', default=0, type=int)
-    parser.add_argument('-m', '--mode', default='NexpNtry', type=str)
+    parser.add_argument('-m', '--method', default='NexpNtry', type=str)
     parser.add_argument('-g', '--group', nargs='*', default=[''], help='Which group you want to fit. Need to fit data from hdf')
     parser.add_argument('--tcf', default='acf', help='Need to fit data from hdf')
     parser.add_argument('-o', '--output', default='out.hdf5', help='filename with ending (npy, hdf5) for saving results')
     args = parser.parse_args()
 
-    fitMod = Fitter()
+    counter = Counter()
+    fitMod = Fitter(logger=counter.add_fitInfo)
+    counter.set_curMethod(args.method)
+    counter.set_curTcf(args.tcf)
     fid = h5py.File(args.output, 'w')
 
     for group in args.group:
+        counter.set_curGroup(group)
         if args.type == 'npy':
             fd = open(args.filename, 'rb')
 
@@ -60,19 +66,23 @@ def main():
                 exp_grp.create_dataset('params', data=np.zeros((data.shape[0], nparams)))
                 exp_grp.create_dataset('covar', data=np.zeros((data.shape[0], nparams, nparams)))
 
-        start = args.istart if args.istart < data.shape[0] else 0
 
+
+        start = args.istart if args.istart < data.shape[0] else 0
         for i in range(start, data.shape[0]):
             bestRes = None
 
             if args.type == 'npy' or args.type == 'hdf':
-                bestRes = fitMod.fit(data[i], errs[i], time, method=args.mode)
+                bestRes = fitMod.fit(data[i], errs[i], time, method=args.method)
             elif args.type == 'csv':
-                bestRes = fitMod.fit(data, errs, time, method=args.mode)
+                bestRes = fitMod.fit(data, errs, time, method=args.method)
 
 
             try:
                 print(fitMod.model.res.fit_report())
+                print(counter.data)
+                if args.type != 'hdf':
+                    continue
                 for group, res in zip(exps, bestRes):
                     if bestRes.succes:
                         group['params'][i] = res.param_vals
@@ -89,6 +99,7 @@ def main():
                 print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
             print('DONE')
+    counter.save('fitStatistic.csv')
     # fitMod.save_toFile('out')
 
 if __name__ == '__main__':

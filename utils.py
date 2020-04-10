@@ -1,3 +1,4 @@
+import re
 import h5py
 
 
@@ -29,3 +30,10 @@ def get_fid(file, ftype, perm):
     else:
         fid = file
     return fid, own_fid
+
+
+def splitCamelCase(name, toLowerCase=True):
+    found = re.sub('([A-Z][a-z]+)', r' \1', re.sub('([A-Z]+)', r' \1', name))
+    if toLowerCase:
+        found = found.lower()
+    return found.split()

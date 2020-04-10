@@ -9,48 +9,78 @@ import utils as u
 class FitResult():
     def __init__(self, model=None, init_values=None, params=None,
                  covar=None, stats=None, nexp=None, succes=None):
-        self.nexp = nexp
-        self.model = model
-        self.init_values = init_values
+        self._nexp = nexp
+        self._model = model
+        self._init_values = init_values
 
-        self.param_names = list(params.keys())
-        self.param_vals = np.array(list(params.values()))
-        self.param_errs = None
+        self._param_names = list(params.keys()) if params else None
+        self._param_vals = np.array(list(params.values())) if params else None
+        self._param_errs = None
 
-        self.best_covar = covar
-        self.stats = stats
+        self._covar = covar
+        self._stats = stats
         self.succes = succes
+
+    def __post_init__(self):
+        self._param_errs = np.sqrt(np.diag(self._covar))
 
 
     def calc_paramErrs(self):
-        self.param_errs = np.sqrt(np.diag(self.covar))
+        self._param_errs = np.sqrt(np.diag(self._covar))
 
     # Getters
-    def get_nexp(self):
-        return self.nexp
+    @property
+    def nexp(self):
+        return self._nexp
 
-    def get_model(self):
-        return self.model
+    @nexp.setter
+    def nexp(self, nexp):
+        self._nexp = nexp
 
-    def get_initialValues(self):
-        return self.init_values
+    @property
+    def model(self):
+        return self._model
 
-    def get_params(self):
-        return self.parameters
+    @model.setter
+    def model(self, model):
+        self._model = model
 
-    def get_covar(self):
-        return self.best_covar
+    @property
+    def initialValues(self):
+        return self._init_values
 
-    def get_paramErrors(self):
-        if not self.param_errs:
+    @initialValues.setter
+    def initialValues(self, init_values):
+        self._init_values = init_values
+
+    @property
+    def param_vals(self):
+        return self._param_vals
+
+    @param_vals.setter
+    def param_vals(self, param_vals):
+        self._param_vals = param_vals()
+
+    @property
+    def covar(self):
+        return self._covar
+
+    @covar.setter
+    def covar(self, covar_matrix):
+        self._covar = covar_matrix
+
+    @property
+    def paramErrors(self):
+        if not self._param_errs:
             self.calc_paramErrs()
-        return self.param_errs
+        return self._param_errs
 
-    def get_stats(self, stat=None):
+    @property
+    def stats(self, stat=None):
         if not stat:
-            return self.stats
-        elif stat in self.stats.keys():
-            return self.stats[stat]
+            return self._stats
+        elif stat in self._stats.keys():
+            return self._stats[stat]
         else:
             print('ERROR!! there no {} in fit statistic'.format(stat), file=sys.stderr)
 

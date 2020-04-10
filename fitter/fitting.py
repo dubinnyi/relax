@@ -7,14 +7,15 @@ import matplotlib.pyplot as plt
 
 from fitter.exp_model import CModel
 from fitter.fit_res import FitResult
+from fitinfo import FitInfo
 
 BASE_VAL = np.array([0.1, 1, 0.01, 10, 0.01, 50, 0.01, 100, 0.01, 1000, 0.01, 3000, 0.01])
-BASE_KEY = ['c', 'adecay', 'aamplitude', 'bdecay', 'bamplitude', 'cdecay', 'camplitude', 'ddecay', 'damplitude', 'edecay', 'eamplitude', 'fdecay', 'famplitude']
+BASE_KEY = ('c', 'adecay', 'aamplitude', 'bdecay', 'bamplitude', 'cdecay', 'camplitude', 'ddecay', 'damplitude', 'edecay', 'eamplitude', 'fdecay', 'famplitude')
 
 rndmizer = np.random.RandomState()
 
 class Fitter:
-    def __init__(self, minexp=4, maxexp=6, randFactor=(.2, 5), ntry=5):
+    def __init__(self, minexp=4, maxexp=6, randFactor=(.2, 5), ntry=5, logger=print):
         self.model = None
         self.ntry  = ntry
         self.randFactor  = randFactor
@@ -24,15 +25,17 @@ class Fitter:
         self.std  = None
         self.time = None
 
-        self.nexp = 0
+        self.cexp = 0
         self.params  = None
         self.lastFit = None
         self.init_values = None
-        self.lastSucces = False
+        self.lastSuccess = False
 
         self.res = None
 
-        self.bestResults = [None] * (maxexp - minexp)
+        self.bestResults = [None] * self.nexp
+        self.fitInfos = [None] * self.nexp
+        self.fitResult = logger
 
     ## Iterators
     def exp_iter(self):
@@ -43,8 +46,13 @@ class Fitter:
     def get_expInterval(self):
         return self.expInterval
 
+    @property
+    def nexp(self):
+        return self.expInterval[1] - self.expInterval[0]
+
     ## Setters
-    def set_nexp(self, minexp, maxexp):
+    @nexp.setter
+    def nexp(self, minexp, maxexp):
         self.expInterval = (minexp, maxexp)
         self.bestResults = [None] * (maxexp - minexp)
         self.prep_model()
@@ -67,7 +75,7 @@ class Fitter:
     ## Prepare to Fit
 
     def prep_model(self):
-        self.nexp = self.expInterval[0]
+        self.cexp = self.expInterval[0]
         self.model = CModel(self.expInterval[0])
         self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], c.copy(BASE_VAL[:(2*self.nexp + 1)])))
 
@@ -97,7 +105,7 @@ class Fitter:
     def fit_NtryNexp(self, init_values=None):
         self.prep_model()
 
-        for self.nexp in self.exp_iter():
+        for self.cexp in self.exp_iter():
             self.fit_ntry()
             try:
                 if not self.res:
@@ -106,24 +114,29 @@ class Fitter:
                 elif self.res.chisqr > self.lastFit.chisqr:
                     self.res = self.lastFit
 
-                if self.nexp == self.expInterval[1]:
+                if self.cexp == self.expInterval[1]:
                     print('res:', self.res.chisqr)
                     return self.res
             except AttributeError as e:
                 print("ERROR!! res is None. It happend while fitting {} exponents. With those initial values: {}".format(self.nexp, self.init_values), file=sys.stderr)
-                self.lastSucces = False
+                self.lastSuccess = False
                 return
             self.save_result()
+            self.clean_beforeFit()
             self.model.add_exp()
-            self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], c.copy(BASE_VAL[:(2*self.nexp + 1)])))
+            self.init_values = dict(zip(BASE_KEY[:(2*self.cexp + 1)], c.copy(BASE_VAL[:(2*self.cexp + 1)])))
         return self.res
 
     def fit_ntry(self):
         curBestFit = None
 
         for _ in range(self.ntry):
-            self._fit(self.init_values)
+            with FitInfo(self.cexp, output=self.fitResult) as fi:
+                self._fit(self.init_values)
+                fi.add_successRate(self.model.has_covar())
+
             if not self.model.has_covar():
+                print("no covar")
                 pass
             elif not curBestFit:
                 curBestFit = self.lastFit
@@ -131,29 +144,29 @@ class Fitter:
                 curBestFit = self.lastFit
 
             if curBestFit:
-                self.lastSucces = True
+                self.lastSuccess = True
                 print(self.lastFit.chisqr, curBestFit.chisqr)
             self.change_init()
-
         self.lastFit = curBestFit
 
     def change_init(self):
         rndmizer.seed()
         new_val = c.copy(BASE_VAL)
         new_val[1::2] = new_val[1::2] * rndmizer.uniform(*self.randFactor)
-        self.init_values = dict(zip(BASE_KEY[:(2*self.nexp + 1)], new_val[:(2*self.nexp + 1)]))
+        self.init_values = dict(zip(BASE_KEY[:(2*self.cexp + 1)], new_val[:(2*self.cexp + 1)]))
 
     def save_result(self):
-        if self.lastSucces:
+        print("Before saving: fit success is: {}; Has covar: {}".format(self.lastSuccess, self.model.has_covar()))
+        if self.lastSuccess:
             stats = {'aic': self.res.aic, 'chisqr': self.res.chisqr, 'bic': self.res.bic,
                     'redchi': self.res.redchi, 'trust_interval': self.res.ci_out}
 
             data = {'model': self.res.model, 'params': self.res.best_values,
-                    'stats': stats, 'covar': self.res.covar, 'succes': self.lastSucces,
+                    'stats': stats, 'covar': self.res.covar, 'succes': self.lastSuccess,
                     'init_values': self.res.init_values, 'nexp': self.nexp}
         else:
-            data = {'succes': self.lastSucces}
-        self.bestResults[self.nexp - self.expInterval[0]] = FitResult(**data)
+            data = {'succes': self.lastSuccess}
+        self.bestResults[self.cexp - self.expInterval[0]] = FitResult(**data)
 
     # Savings and Results
 
@@ -194,14 +207,18 @@ class Fitter:
     def get_result(self):
         return self.res.report()
 
+    def clean_beforeFit(self):
+        self.lastSuccess = False
+
     def clear(self):
         self.data = None
         self.std = None
         self.time = None
 
-        self.nexp = 0
+        self.cexp = 0
         self.res = None
         self.params = None
         self.init_values = None
         self.lastFit = None
-        self.bestResults = [None] * (self.expInterval[1] - self.expInterval[0])
+        self.lastSuccess = False
+        self.bestResults = [None] * self.nexp
