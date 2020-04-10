@@ -1,7 +1,9 @@
 *.todo
 *.pyc
-
-__pycache__/
+*.npy
+*.hdf5
+*_pairs.txt
+config_tmp
 
 # Data Files
 
