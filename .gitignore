@@ -1,3 +1,11 @@
 *.todo
 *.pyc
-config_tmp
+
+__pycache__/
+
+# Data Files
+
+*.npy
+*.png
+*.hdf5
+*.csv

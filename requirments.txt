@@ -1,0 +1,8 @@
+numpy
+prettytable
+argparse
+subprocess
+matplotlib
+lmfit
+tqdm
+pandas
