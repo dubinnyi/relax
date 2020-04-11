@@ -52,3 +52,20 @@
    **--tcf**, default=acf, _Need to fit data from hdf_
    
    **-o**, **--output**, default=out.hdf5, _filename (npy, hdf5) for saving results_
+
+## dpendencies:
+
+**numpy
+scipy
+lmfit
+h5py
+prettytable
+pandas**
+
+The utility **hdfview** is usefull for inspection of input/output hdf5 files
+
+The following commands will resolve all recquired dependencies (fedora Linux):
+````
+ > dnf install -y python3-numpy pythob3-scipy hdfview python3-h5py python3-prettytable python3-pandas
+ > pip3 install lmfit
+````
