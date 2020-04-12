@@ -1,4 +1,4 @@
-## hdreform
+## hdfreform
 
    **filename**
    
@@ -39,20 +39,35 @@
 
 ## fit_data.py
 
-   **filename**
-   
-   **-t**, **--type**, default=npy, _Type of using datafile. Can be: npy, csv, hdf_
-   
-   **-i**, **--istart**, default=0
-   
-   **-m**, **--method**, default=NexpNtry
-   
-   **-g**, **--group**, nargs=*, default=[\'\'], _Which group you want to fit. Need to fit data from hdf_
-   
-   **--tcf**, default=acf, _Need to fit data from hdf_
-   
-   **-o**, **--output**, default=out.hdf5, _filename (npy, hdf5) for saving results_
+   Input/Output:
 
+   **filename** the input file with `acf/ccf` time series data in `npy`, `csv` or `hdf` format
+   
+   **-o**, **--output**, default=`out.hdf5`, _filename to output the results_
+   
+   **-t**, **--type**, data type of input , default=`npy`
+   
+   In case of `hdf` input file format, the following options will select the data to be fitted:
+   
+   **-g**, **--group**, nargs=*, default=[\'NH\'], _The group name(s) to fit, multiple groups may be specified
+   
+   **--tcf**, default=acf, (autocorrelation function), ccf (cross correlation functions) will be supported in the furure 
+   
+   Method of data fitting:
+   
+   **-m**, **--method**, default=NexpNtry, reserved for future extensions
+   
+   Debugging and testing options:
+   
+   **-i**, **--istart**, default=0. Starts fitting procedure from i-th relaxation group. 
+   
+### example:
+   Fit all `acf` (autocorrelation functions)  of all `NH` groups in file `reformAll.hdf`, 
+   write fit results to the file `fit_NH.hdf`:
+```
+   fit_data.py -t hdf -g NH -o fit_NH.hdf reformAll.hdf
+```
+  
 ## dependencies:
 
 **numpy
