@@ -18,7 +18,7 @@ def main():
     parser.add_argument('-t', '--type', default='npy', help="Type of using datafile. Can be: \'npy\', \'csv\', \'hdf\'")
     parser.add_argument('-i', '--istart', default=0, type=int)
     parser.add_argument('-m', '--method', default='NexpNtry', type=str)
-    parser.add_argument('-g', '--group', nargs='*', default=[''], help='Which group you want to fit. Need to fit data from hdf')
+    parser.add_argument('-g', '--group', nargs='*', default=['NH'], help='Which group you want to fit. Need to fit data from hdf')
     parser.add_argument('--tcf', default='acf', help='Need to fit data from hdf')
     parser.add_argument('-o', '--output', default='out.hdf5', help='filename for saving results')
     args = parser.parse_args()
