@@ -48,13 +48,13 @@ class Fitter:
 
     @property
     def nexp(self):
-        return self.expInterval[1] - self.expInterval[0]
+        return self.expInterval[1] + 1  - self.expInterval[0]
 
     ## Setters
     @nexp.setter
     def nexp(self, minexp, maxexp):
         self.expInterval = (minexp, maxexp)
-        self.bestResults = [None] * (maxexp - minexp)
+        self.bestResults = [None] * (maxexp + 1 - minexp)
         self.prep_model()
 
     def set_time(self, timeline=None, dt=None, nframe=None):
@@ -116,6 +116,7 @@ class Fitter:
 
                 if self.cexp == self.expInterval[1]:
                     print('res:', self.res.chisqr)
+                    self.save_result()
                     return self.res
             except AttributeError as e:
                 print("ERROR!! res is None. It happend while fitting {} exponents. With those initial values: {}".format(self.nexp, self.init_values), file=sys.stderr)
