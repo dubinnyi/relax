@@ -111,7 +111,7 @@ class Counter:
             output += '{} - {:.3f} c\n'.format(exp, self.get_meanTime(exp=exp))
 
         for tcf in self.data['tcf'].unique():
-            output += "Корреляционная функция: {}\n"
+            output += "Корреляционная функция: {}\n".format(tcf)
             x = PrettyTable()
             x.field_names = ['Группа', 'Число Экспонент', 'Среднее время, c', 'Общее время, c', 'Количество успешных']
 
