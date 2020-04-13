@@ -84,11 +84,14 @@ def main():
                 if args.type != 'hdf':
                     continue
                 for group, res in zip(exps, bestRes):
-                    if bestRes.succes:
+                    if res.succes:
                         group['params'][i] = res.param_vals
-                        group['covar'][i]  = res.best_covar
-                        for key, item in res.stats.items():
-                            group.attrs[key] = item
+                        group['covar'][i]  = res.covar
+                        # if res.stats:
+                        #     for key, item in res.stats.items():
+                        #         # save to hdf fails if item = None
+                        #         if item:
+                        #             group.attrs[key] = item
                     else:
                         print('Smth went wrong. There no fit', file=sys.stderr)
                         print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
