@@ -1,4 +1,4 @@
-## hdreform
+## hdfreform
 
    **filename**
    
@@ -39,16 +39,48 @@
 
 ## fit_data.py
 
-   **filename**
+   Input/Output:
+
+   **filename** the input file with `acf/ccf` time series data in `npy`, `csv` or `hdf` format
    
-   **-t**, **--type**, default=npy, _Type of using datafile. Can be: npy, csv, hdf_
+   **-o**, **--output**, default=`out.hdf5`, _filename to output the results_
    
-   **-i**, **--istart**, default=0
+   **-t**, **--type**, data type of input , default=`npy`
    
-   **-m**, **--method**, default=NexpNtry
+   In case of `hdf` input file format, the following options will select the data to be fitted:
    
-   **-g**, **--group**, nargs=*, default=[\'\'], _Which group you want to fit. Need to fit data from hdf_
+   **-g**, **--group**, nargs=*, default=[\'NH\'], _The group name(s) to fit, multiple groups may be specified
    
-   **--tcf**, default=acf, _Need to fit data from hdf_
+   **--tcf**, default=acf, (autocorrelation function), ccf (cross correlation functions) will be supported in the furure 
    
-   **-o**, **--output**, default=out.hdf5, _filename (npy, hdf5) for saving results_
+   Method of data fitting:
+   
+   **-m**, **--method**, default=NexpNtry, reserved for future extensions
+   
+   Debugging and testing options:
+   
+   **-i**, **--istart**, default=0. Starts fitting procedure from i-th relaxation group. 
+   
+### example:
+   Fit all `acf` (autocorrelation functions)  of all `NH` groups in file `reformAll.hdf`, 
+   write fit results to the file `fit_NH.hdf`:
+```
+   fit_data.py -t hdf -g NH -o fit_NH.hdf reformAll.hdf
+```
+  
+## dependencies:
+
+**numpy
+scipy
+lmfit
+h5py
+prettytable
+pandas**
+
+The utility **hdfview** is usefull for visualisation of input/output hdf5 files
+
+The following commands will resolve recquired dependencies (fedora Linux):
+````
+ > dnf install -y python3-numpy python3-scipy hdfview python3-h5py python3-prettytable python3-pandas
+ > pip3 install lmfit
+````

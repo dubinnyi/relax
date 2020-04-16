@@ -50,6 +50,7 @@ class Fitter:
     def nexp(self):
         return self.expInterval[1] + 1 - self.expInterval[0]
 
+
     ## Setters
     @nexp.setter
     def nexp(self, minexp, maxexp):
