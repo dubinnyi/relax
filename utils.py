@@ -1,5 +1,6 @@
 import re
 import h5py
+import numpy as np
 
 
 # ftype - [npy, hdf5, csv]
@@ -37,3 +38,9 @@ def splitCamelCase(name, toLowerCase=True):
     if toLowerCase:
         found = found.lower()
     return found.split()
+
+def create_nameArray(shape, namesList, dtype=float):
+    ds_dt = np.dtype({'names':namesList,'formats':[dtype]*len(namesList) })
+    data = np.zeros((len(namesList), shape))
+    rec_arr = np.rec.fromarrays(data, dtype=ds_dt)
+    return rec_arr
