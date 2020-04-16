@@ -48,7 +48,8 @@ class Fitter:
 
     @property
     def nexp(self):
-        return self.expInterval[1] + 1  - self.expInterval[0]
+        return self.expInterval[1] + 1 - self.expInterval[0]
+
 
     ## Setters
     @nexp.setter
@@ -159,13 +160,14 @@ class Fitter:
     def save_result(self):
         if self.lastSuccess:
             stats = {'aic': self.res.aic, 'chisqr': self.res.chisqr, 'bic': self.res.bic,
-                    'redchi': self.res.redchi, 'trust_interval': self.res.ci_out}
+                    'redchi': self.res.redchi}
 
             data = {'model': self.res.model, 'params': self.res.best_values,
-                    'stats': stats, 'covar': self.res.covar, 'succes': self.lastSuccess,
+                    'stats': stats, 'covar': self.res.covar, 'success': self.lastSuccess,
                     'init_values': self.res.init_values, 'nexp': self.nexp}
         else:
-            data = {'succes': self.lastSuccess}
+            data = {'success': self.lastSuccess, 'model': self.res.model,
+                    'init_values': self.res.init_values, 'nexp': self.nexp}
         self.bestResults[self.cexp - self.expInterval[0]] = FitResult(**data)
 
     # Savings and Results

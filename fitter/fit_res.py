@@ -8,18 +8,18 @@ import utils as u
 
 class FitResult():
     def __init__(self, model=None, init_values=None, params=None,
-                 covar=None, stats=None, nexp=None, succes=None):
+                 covar=None, stats=None, nexp=None, success=None):
         self._nexp = nexp
         self._model = model
         self._init_values = init_values
 
-        self._param_names = list(params.keys()) if params else None
+        self._param_names = list(params.keys()) if params else list(init_values.keys())
         self._param_vals = np.array(list(params.values())) if params else None
         self._param_errs = None
 
         self._covar = covar
         self._stats = stats
-        self.succes = succes
+        self.success = success
 
     def __post_init__(self):
         self._param_errs = np.sqrt(np.diag(self._covar))
@@ -90,7 +90,7 @@ class FitResult():
     def toFile(self, file, ftype='npy'):
         fid, own_fid = u.get_fid(file, ftype, 'w')
 
-        if ftype == 'hdf5':
+        if ftype == 'hdf':
             self.save_hdf(fid)
         elif ftype == 'npy':
             self.save_npy(fid)
@@ -99,12 +99,37 @@ class FitResult():
         if own_fid:
             fid.close()
 
-    def save_hdf(self, fid):
-        grp = fid.create_group()
-        grp.create_dataset('params', data=self.params)
-        grp.create_dataset('covar', data=self.best_covar)
-        for key, val in self.stats.items():
-            grp.attrs.create(key, val)
+    def __repr__(self):
+        output = "covar: {}\nstats: {}\nparam vals: {}\nparam names{}".format(self._covar, self._stats, self._param_vals, self._param_names)
+        return "Fit Result: " + output
+
+    def __str__(self):
+        output = "Результаты фита\n"
+        output += 'Число экспонент: {}\n'.format(self.nexp)
+        output += 'Используемый метод: {}\n'.format(self.model)
+        output += 'Параметры: {}\n'.format(self._param_names)
+        output += 'Начальные значения параметров: {}\n'.format(self.initialValues)
+
+        if self.success:
+            output += 'Выписывание прошло успешно\n'
+            output += 'Полученные значения параметров: {}\n'.format(self._param_vals)
+            output += 'Ковариационная матрица:\n{}\n'.format(self.covar)
+            output += 'Статистики: {}\n'.format(self.stats)
+        else:
+            output += 'Не удалось выполнить вписывание\n'
+
+
+        self._nexp = nexp
+        self._model = model
+        self._init_values = init_values
+
+        self._param_names = list(params.keys()) if params else None
+        self._param_vals = np.array(list(params.values())) if params else None
+        self._param_errs = None
+
+        self._covar = covar
+        self._stats = stats
+        self.success = success
 
     def save_npy(self, fid):
         #TODO
