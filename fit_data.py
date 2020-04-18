@@ -29,8 +29,8 @@ def load_data(args, group):
     elif args.type == 'csv':
         data = np.loadtxt(args.filename, delimiter=',')
         time = data[:, 0]
-        func = data[:, 1]
-        errs = np.sqrt(data[:, 2])
+        func = [ data[:, 1] ]
+        errs = [ np.sqrt(data[:, 2]) ]
         # ОЧЕНЬ ВАЖНО!!
         errs[0] = errs[1]
 
@@ -39,8 +39,9 @@ def load_data(args, group):
         time = fd['time'][:]
         func = fd[group][args.tcf]['mean'][:]
         errs = fd[group][args.tcf]['errs'][:]
-
         errs[:, 0] = errs[:, 1]
+    else:
+        (time, func, errs) = (None, None, None)
     return time, func, errs
 
 def main():
@@ -72,7 +73,7 @@ def main():
         for i in fitMod.exp_iter():
             cexp = grp.create_group('exp{}'.format(i))
             exps.append(cexp)
-        for exp_grp, i in zip(exps, range(4, 7)):
+        for exp_grp, i in zip(exps, range(args.exp_start, args.exp_finish + 1)):
             nparams = 2 * i + 1
             exp_grp.create_dataset('params', data=np.zeros((data.shape[0], nparams)))
             exp_grp.create_dataset('covar', data=np.zeros((data.shape[0], nparams, nparams)))
@@ -83,13 +84,7 @@ def main():
         start = args.istart if args.istart < data.shape[0] else 0
         for i in range(start, data.shape[0]):
             counter.set_curN(i)
-            bestRes = None
-
-            if args.type == 'npy' or args.type == 'hdf':
-                bestRes = fitMod.fit(data[i], errs[i], time, method=args.method)
-            elif args.type == 'csv':
-                bestRes = fitMod.fit(data, errs, time, method=args.method)
-
+            bestRes = fitMod.fit(data[i], errs[i], time, method=args.method)
 
             try:
                 print(fitMod.model.res.fit_report())
