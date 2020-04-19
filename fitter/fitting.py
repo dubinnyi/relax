@@ -140,17 +140,24 @@ class Fitter:
                 self._fit(self.init_values)
                 fi.add_successRate(self.model.has_covar())
 
+            name_string_exp_try = "{} exp{:<2} - try{:<2}".\
+                format(self.name_string, self.cexp, itry + 1)
+            new_best_fit_flag = False
             if not self.model.has_covar():
-                print("{}: No covariance matrix. This fit will be skipped".format(self.name_string))
+                print("{}: No covariance matrix in result".\
+                      format(name_string_exp_try))
                 pass
             elif not curBestFit:
                 curBestFit = self.lastFit
             elif curBestFit and curBestFit.chisqr > self.lastFit.chisqr:
                 curBestFit = self.lastFit
+                new_best_fit_flag =True
 
             if curBestFit:
                 self.lastSuccess = True
-                print("{} exp{:<1} - {:2}: CHISQR= {:7.4f} ".format(self.name_string, self.cexp, itry, self.lastFit.chisqr))
+                print("{}: CHISQR= {:7.4f} {}".\
+                      format(name_string_exp_try, self.lastFit.chisqr,
+                             "" if not new_best_fit_flag else " - New BEST"))
             self.change_init()
         self.lastFit = curBestFit
 
