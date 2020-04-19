@@ -35,6 +35,7 @@ class Fitter:
         self.res = None
 
         self.bestResults = [None] * self.nexp
+        self.anyResult = False
         self.fitInfos = [None] * self.nexp
         self.fitResult = logger
 
@@ -118,13 +119,18 @@ class Fitter:
                     self.res = self.lastFit
 
                 if self.cexp == self.expInterval[1]:
-                    print("{}: Best CHISQR = {:7.4f}".format(self.name_string, self.res.chisqr))
                     self.save_result()
+                    if self.res:
+                        self.anyResult = True
+                        print("{}: Best CHISQR = {:8.4f}".format(self.name_string, self.res.chisqr))
+                    else:
+                        print("{}: NO RESULT FOUND".format(self.name_string))
                     return self.res
             except AttributeError as e:
-                print("{}: ERROR!! res is None. " +
-                      "It happend while fitting {} exponents. With those initial values: {}".\
-                      format(self.name_string, self.nexp, self.init_values), file=sys.stderr)
+                print("{}: ERROR!! res is None.".format(self.name_string))
+                print("Error is {}".format(e))
+                print("It happend while fitting {} exponents. With those initial values: {}".\
+                      format( self.cexp, self.init_values), file=sys.stderr)
                 self.lastSuccess = False
                 return
             self.save_result()
@@ -143,22 +149,20 @@ class Fitter:
 
             name_string_exp_try = "{} exp{:<2} - try{:<2}".\
                 format(self.name_string, self.cexp, itry + 1)
-            new_best_fit_flag = False
+            chi_sqr_string = "CHISQR= {:8.4f}".format(self.lastFit.chisqr)
+            info_string = ""
             if not self.model.has_covar():
-                print("{}: No covariance matrix in result".\
-                      format(name_string_exp_try))
-                pass
+                info_string = "-- No covariance matrix in result"
             elif not curBestFit:
                 curBestFit = self.lastFit
             elif curBestFit and curBestFit.chisqr > self.lastFit.chisqr:
                 curBestFit = self.lastFit
-                new_best_fit_flag =True
+                info_string = "-- New BEST"
 
             if curBestFit:
                 self.lastSuccess = True
-                print("{}: CHISQR= {:7.4f} {}".\
-                      format(name_string_exp_try, self.lastFit.chisqr,
-                             "" if not new_best_fit_flag else " - New BEST"))
+
+            print("{}: {} {}". format(name_string_exp_try, chi_sqr_string, info_string))
             self.change_init()
         self.lastFit = curBestFit
 
@@ -178,7 +182,7 @@ class Fitter:
                     'init_values': self.res.init_values, 'nexp': self.nexp}
         else:
             model = self.res.model if self.res else None
-            init_values = self.res.init_values if self.res else None
+            init_values = self.res.init_values if self.res else {}
             data = {'success': self.lastSuccess, 'model': model,
                     'init_values': init_values, 'nexp': self.nexp}
         self.bestResults[self.cexp - self.expInterval[0]] = FitResult(**data)
