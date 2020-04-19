@@ -86,10 +86,11 @@ class Fitter:
         self.data = data
         self.std = std
         self.time = timeline
+        self.name_string = "Unnamed data" if not 'name_string' in kwargs else kwargs['name_string']
         if method == 'NexpNtry':
             self.fit_NtryNexp(*args, **kwargs)
         else:
-            print('ERROR!! You choose wrong method', file=sys.stderr)
+            print('ERROR!! Method should be NexpNtry', file=sys.stderr)
 
         return self.bestResults
 
@@ -103,7 +104,7 @@ class Fitter:
         #################
         self.lastFit = self.model.fit(y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values)
 
-    def fit_NtryNexp(self, init_values=None):
+    def fit_NtryNexp(self, **kwargs):
         self.prep_model()
 
         for self.cexp in self.exp_iter():
@@ -116,11 +117,13 @@ class Fitter:
                     self.res = self.lastFit
 
                 if self.cexp == self.expInterval[1]:
-                    print('res:', self.res.chisqr)
+                    print("{}: Best CHISQR = {:7.4f}".format(self.name_string, self.res.chisqr))
                     self.save_result()
                     return self.res
             except AttributeError as e:
-                print("ERROR!! res is None. It happend while fitting {} exponents. With those initial values: {}".format(self.nexp, self.init_values), file=sys.stderr)
+                print("{}: ERROR!! res is None. " +
+                      "It happend while fitting {} exponents. With those initial values: {}".\
+                      format(self.name_string, self.nexp, self.init_values), file=sys.stderr)
                 self.lastSuccess = False
                 return
             self.save_result()
@@ -132,13 +135,13 @@ class Fitter:
     def fit_ntry(self):
         curBestFit = None
 
-        for _ in range(self.ntry):
+        for itry in range(self.ntry):
             with FitInfo(self.cexp, output=self.fitResult) as fi:
                 self._fit(self.init_values)
                 fi.add_successRate(self.model.has_covar())
 
             if not self.model.has_covar():
-                print("no covar")
+                print("{}: No covariance matrix. This fit will be skipped".format(self.name_string))
                 pass
             elif not curBestFit:
                 curBestFit = self.lastFit
@@ -147,7 +150,7 @@ class Fitter:
 
             if curBestFit:
                 self.lastSuccess = True
-                print(self.lastFit.chisqr, curBestFit.chisqr)
+                print("{} exp{:<1} - {:2}: CHISQR= {:7.4f} ".format(self.name_string, self.cexp, itry, self.lastFit.chisqr))
             self.change_init()
         self.lastFit = curBestFit
 
