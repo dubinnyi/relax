@@ -178,8 +178,9 @@ class Fitter:
                     'init_values': self.res.init_values, 'nexp': self.nexp}
         else:
             model = self.res.model if self.res else None
+            init_values = self.res.init_values if self.res else None
             data = {'success': self.lastSuccess, 'model': model,
-                    'init_values': self.res.init_values, 'nexp': self.nexp}
+                    'init_values': init_values, 'nexp': self.nexp}
         self.bestResults[self.cexp - self.expInterval[0]] = FitResult(**data)
 
     # Savings and Results
