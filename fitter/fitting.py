@@ -21,6 +21,7 @@ class Fitter:
         self.randFactor  = randFactor
         self.expInterval = (minexp, maxexp)
 
+        self.name_string = "Unnamed data"
         self.data = None
         self.std  = None
         self.time = None
@@ -176,7 +177,8 @@ class Fitter:
                     'stats': stats, 'covar': self.res.covar, 'success': self.lastSuccess,
                     'init_values': self.res.init_values, 'nexp': self.nexp}
         else:
-            data = {'success': self.lastSuccess, 'model': self.res.model,
+            model = self.res.model if self.res else None
+            data = {'success': self.lastSuccess, 'model': model,
                     'init_values': self.res.init_values, 'nexp': self.nexp}
         self.bestResults[self.cexp - self.expInterval[0]] = FitResult(**data)
 
