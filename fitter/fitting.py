@@ -169,7 +169,7 @@ class Fitter:
         self.init_values = dict(zip(BASE_KEY[:(2*self.cexp + 1)], new_val[:(2*self.cexp + 1)]))
 
     def save_result(self):
-        if self.lastSuccess:
+        if self.lastSuccess and self.res:
             stats = {'aic': self.res.aic, 'chisqr': self.res.chisqr, 'bic': self.res.bic,
                     'redchi': self.res.redchi}
 
