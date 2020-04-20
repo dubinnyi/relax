@@ -135,6 +135,7 @@ class hdfAPI(File):
                             raise Exception("ERROR!! smarts are not equal")
                 return True
         except Exception as e:
+            print(e)
             return False
 
     def check_file(self):
