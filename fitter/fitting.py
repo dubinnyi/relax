@@ -21,6 +21,7 @@ class Fitter:
         self.randFactor  = randFactor
         self.expInterval = (minexp, maxexp)
 
+        self.name_string = "Unnamed data"
         self.data = None
         self.std  = None
         self.time = None
@@ -34,6 +35,7 @@ class Fitter:
         self.res = None
 
         self.bestResults = [None] * self.nexp
+        self.anyResult = False
         self.fitInfos = [None] * self.nexp
         self.fitResult = logger
 
@@ -86,10 +88,11 @@ class Fitter:
         self.data = data
         self.std = std
         self.time = timeline
+        self.name_string = "Unnamed data" if not 'name_string' in kwargs else kwargs['name_string']
         if method == 'NexpNtry':
             self.fit_NtryNexp(*args, **kwargs)
         else:
-            print('ERROR!! You choose wrong method', file=sys.stderr)
+            print('ERROR!! Method should be NexpNtry', file=sys.stderr)
 
         return self.bestResults
 
@@ -103,7 +106,7 @@ class Fitter:
         #################
         self.lastFit = self.model.fit(y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values)
 
-    def fit_NtryNexp(self, init_values=None):
+    def fit_NtryNexp(self, **kwargs):
         self.prep_model()
 
         for self.cexp in self.exp_iter():
@@ -116,11 +119,18 @@ class Fitter:
                     self.res = self.lastFit
 
                 if self.cexp == self.expInterval[1]:
-                    print('res:', self.res.chisqr)
                     self.save_result()
+                    if self.res:
+                        self.anyResult = True
+                        print("{}: Best CHISQR = {:8.4f}".format(self.name_string, self.res.chisqr))
+                    else:
+                        print("{}: NO RESULT FOUND".format(self.name_string))
                     return self.res
             except AttributeError as e:
-                print("ERROR!! res is None. It happend while fitting {} exponents. With those initial values: {}".format(self.nexp, self.init_values), file=sys.stderr)
+                print("{}: ERROR!! res is None.".format(self.name_string))
+                print("Error is {}".format(e))
+                print("It happend while fitting {} exponents. With those initial values: {}".\
+                      format( self.cexp, self.init_values), file=sys.stderr)
                 self.lastSuccess = False
                 return
             self.save_result()
@@ -132,22 +142,27 @@ class Fitter:
     def fit_ntry(self):
         curBestFit = None
 
-        for _ in range(self.ntry):
+        for itry in range(self.ntry):
             with FitInfo(self.cexp, output=self.fitResult) as fi:
                 self._fit(self.init_values)
                 fi.add_successRate(self.model.has_covar())
 
+            name_string_exp_try = "{} exp{:<2} - try{:<2}".\
+                format(self.name_string, self.cexp, itry + 1)
+            chi_sqr_string = "CHISQR= {:8.4f}".format(self.lastFit.chisqr)
+            info_string = ""
             if not self.model.has_covar():
-                print("no covar")
-                pass
+                info_string = "-- No covariance matrix in result"
             elif not curBestFit:
                 curBestFit = self.lastFit
             elif curBestFit and curBestFit.chisqr > self.lastFit.chisqr:
                 curBestFit = self.lastFit
+                info_string = "-- New BEST"
 
             if curBestFit:
                 self.lastSuccess = True
-                print(self.lastFit.chisqr, curBestFit.chisqr)
+
+            print("{}: {} {}". format(name_string_exp_try, chi_sqr_string, info_string))
             self.change_init()
         self.lastFit = curBestFit
 
@@ -158,7 +173,7 @@ class Fitter:
         self.init_values = dict(zip(BASE_KEY[:(2*self.cexp + 1)], new_val[:(2*self.cexp + 1)]))
 
     def save_result(self):
-        if self.lastSuccess:
+        if self.lastSuccess and self.res:
             stats = {'aic': self.res.aic, 'chisqr': self.res.chisqr, 'bic': self.res.bic,
                     'redchi': self.res.redchi}
 
@@ -166,8 +181,10 @@ class Fitter:
                     'stats': stats, 'covar': self.res.covar, 'success': self.lastSuccess,
                     'init_values': self.res.init_values, 'nexp': self.nexp}
         else:
-            data = {'success': self.lastSuccess, 'model': self.res.model,
-                    'init_values': self.res.init_values, 'nexp': self.nexp}
+            model = self.res.model if self.res else None
+            init_values = self.res.init_values if self.res else {}
+            data = {'success': self.lastSuccess, 'model': model,
+                    'init_values': init_values, 'nexp': self.nexp}
         self.bestResults[self.cexp - self.expInterval[0]] = FitResult(**data)
 
     # Savings and Results

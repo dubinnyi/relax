@@ -11,3 +11,5 @@ config_tmp
 *.png
 *.hdf5
 *.csv
+*.hdf
+*.nb

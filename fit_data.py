@@ -17,20 +17,22 @@ STAT_PARAMS_NAMES = ('aic', 'bic', 'chisqr', 'redchi')
 
 def load_data(args, group):
     if args.type == 'npy':
-        fd = open(args.filename, 'rb')
+        with open(args.filename, 'rb') as fd:
 
-        time = np.load(fd)
-        func = np.load(fd)
-        errs = np.load(fd)
+            time = np.load(fd)
+            func = np.load(fd)
+            errs = np.load(fd)
 
-        errs[:, 0] = errs[:, 1]
-        fd.close()
+            errs[:, 0] = errs[:, 1]
+            names = [str(i) for i in range(func.shape[0])]
+
 
     elif args.type == 'csv':
         data = np.loadtxt(args.filename, delimiter=',')
         time = data[:, 0]
-        func = data[:, 1]
-        errs = np.sqrt(data[:, 2])
+        func = [ data[:, 1] ]
+        errs = [ np.sqrt(data[:, 2]) ]
+        names = [args.filename]
         # ОЧЕНЬ ВАЖНО!!
         errs[0] = errs[1]
 
@@ -39,9 +41,12 @@ def load_data(args, group):
         time = fd['time'][:]
         func = fd[group][args.tcf]['mean'][:]
         errs = fd[group][args.tcf]['errs'][:]
-
+        names = fd[group][args.tcf].attrs['names']
+        names = names.splitlines()
         errs[:, 0] = errs[:, 1]
-    return time, func, errs
+    else:
+        (time, func, errs, names) = (None, None, None, None)
+    return time, func, errs, names
 
 def main():
     parser = ArgumentParser()
@@ -64,7 +69,8 @@ def main():
 
     for group in args.group:
         counter.set_curGroup(group)
-        time, data, errs = load_data(args, group)
+        time, data, errs, names = load_data(args, group)
+        data_size = data.shape[0]
 
     ## Prepare file for saving results
         grp = fid.create_group(group)
@@ -72,52 +78,52 @@ def main():
         for i in fitMod.exp_iter():
             cexp = grp.create_group('exp{}'.format(i))
             exps.append(cexp)
-        for exp_grp, i in zip(exps, range(4, 7)):
+        for exp_grp, i in zip(exps, range(args.exp_start, args.exp_finish + 1)):
             nparams = 2 * i + 1
-            exp_grp.create_dataset('params', data=np.zeros((data.shape[0], nparams)))
-            exp_grp.create_dataset('covar', data=np.zeros((data.shape[0], nparams, nparams)))
-            exp_grp.create_dataset('stats', data=u.create_nameArray(data.shape[0], STAT_PARAMS_NAMES))
+            exp_grp.create_dataset('params', data=np.zeros((data_size, nparams)))
+            exp_grp.create_dataset('covar', data=np.zeros((data_size, nparams, nparams)))
+            exp_grp.create_dataset('stats', data=u.create_nameArray(data_size, STAT_PARAMS_NAMES))
 
 
 
-        start = args.istart if args.istart < data.shape[0] else 0
-        for i in range(start, data.shape[0]):
-            counter.set_curN(i)
-            bestRes = None
-
-            if args.type == 'npy' or args.type == 'hdf':
-                bestRes = fitMod.fit(data[i], errs[i], time, method=args.method)
-            elif args.type == 'csv':
-                bestRes = fitMod.fit(data, errs, time, method=args.method)
-
+        start = args.istart if args.istart < data_size else 0
+        for i in range(start, data_size):
+            # set name, not index
+            counter.set_curN(names[i])
+            name_string = "{:10} {:25}".format(group, names[i])
+            bestRes = fitMod.fit(data[i], errs[i], time, method=args.method, name_string = name_string)
 
             try:
-                print(fitMod.model.res.fit_report())
-                # if args.type != 'hdf':
-                #     continue
-                for group_hdf, res in zip(exps, bestRes):
-                    if res.success:
-                        # print(res)
-                        group_hdf['params'][i] = res.param_vals
-                        group_hdf['covar'][i]  = res.covar
-                        ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
-                        stat_list = []
-                        for key in STAT_PARAMS_NAMES:
-                            vals = res.stats
-                            stat_list += [vals[key]]
+                if not fitMod.anyResult:
+                    pass
+                else:
+                    print(fitMod.model.res.fit_report())
+                    # if args.type != 'hdf':
+                    #     continue
+                    for group_hdf, res in zip(exps, bestRes):
+                        if res.success:
+                            # print(res)
+                            group_hdf['params'][i] = res.param_vals
+                            group_hdf['covar'][i]  = res.covar
+                            ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
+                            stat_list = []
+                            for key in STAT_PARAMS_NAMES:
+                                vals = res.stats
+                                stat_list += [vals[key]]
 
-                        group_hdf['stats'][i] = tuple(stat_list)
-                        ## КОНЕЦ УПОРОТОГО МОМЕНТА
-                    else:
-                        print('Smth went wrong. There no fit', file=sys.stderr)
-                        print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
+                            group_hdf['stats'][i] = tuple(stat_list)
+                            ## КОНЕЦ УПОРОТОГО МОМЕНТА
+                        else:
+                            print("{}: fit failed".format(name_string), file=sys.stderr)
+                            #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
+
 
             except Exception as e:
-                print('ERROR!! Smth went wrong. There must not be any errors!', file=sys.stderr)
+                print("{}: ERROR in fit".format(name_string), file=sys.stderr)
                 print(type(e), e, file=sys.stderr)
-                print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
+                #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
-            print('DONE')
+            print("{}: DONE".format(name_string))
     counter.save('fitStatistic.csv')
     print(counter)
     # fitMod.save_toFile('out')
