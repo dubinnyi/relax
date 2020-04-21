@@ -60,33 +60,15 @@ def pool_fit_one(args):
     time = args['time']
     s, f = args['indexes']
     fitMod.fitResult = counter.add_fitInfo
+
+    parallelResults = [None]
     for i, ci in zip(range(s, f), range(f-s)):
         counter.set_curN(names[ci])
         name_string = "{:10} {:25}".format(group, names[ci])
         bestRes = fitMod.fit(data[ci], errs[ci], time, method=args['method'], name_string = name_string)
-
-        try:
-            pass
-            # if fitMod.anyResult:
-                # for group_hdf, res in zip(exps, bestRes):
-                    # if res.success:
-                    #     group_hdf['params'][i] = res.param_vals
-                    #     group_hdf['covar'][i]  = res.covar
-                    #     ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
-                    #     stat_list = []
-                    #     for key in STAT_PARAMS_NAMES:
-                    #         vals = res.stats
-                    #         stat_list += [vals[key]]
-
-                    #     group_hdf['stats'][i] = tuple(stat_list)
-                    #     ## КОНЕЦ УПОРОТОГО МОМЕНТА
-                    # else:
-                    #     print("{}: fit failed".format(name_string), file=sys.stderr)
-        except Exception as e:
-            print("{}: ERROR in fit".format(name_string), file=sys.stderr)
-            print(type(e), e, file=sys.stderr)
+        parallelResults[ci] = (i, bestRes, fitMod.anyResult)
         print("{}: DONE".format(name_string))
-    return counter
+    return counter, parallelResults, name_string
 
 def main():
     parser = ArgumentParser()
@@ -141,10 +123,39 @@ def main():
         pool.close()
         pool.join()
         res_par.wait()
-        result_counters = res_par.get()
-        for rc in result_counters:
-            counter = counter + rc
-            # set name, not index
+        result = res_par.get()
+
+        try:
+            for rc, rf, name_string in result:
+                counter = counter + rc
+                for (i, bestRes, anyResult) in rf:
+                    if not anyResult:
+                        pass
+                    else:
+                        for group_hdf, res in zip(exps, bestRes):
+                            if res.success:
+                                # print(res)
+                                group_hdf['params'][i] = res.param_vals
+                                group_hdf['covar'][i]  = res.covar
+                                ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
+                                stat_list = []
+                                for key in STAT_PARAMS_NAMES:
+                                    vals = res.stats
+                                    stat_list += [vals[key]]
+
+                                group_hdf['stats'][i] = tuple(stat_list)
+                                ## КОНЕЦ УПОРОТОГО МОМЕНТА
+                            else:
+                                print("{}: fit failed".format(name_string), file=sys.stderr)
+                                #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
+
+
+        except Exception as e:
+            print("{}: ERROR in fit".format(name_string), file=sys.stderr)
+            print(type(e), e, file=sys.stderr)
+            #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
+
+        print("{}: DONE".format(name_string))
 
 
     counter.save('fitStatistic.csv')

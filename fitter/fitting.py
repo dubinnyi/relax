@@ -176,13 +176,12 @@ class Fitter:
             stats = {'aic': self.res.aic, 'chisqr': self.res.chisqr, 'bic': self.res.bic,
                     'redchi': self.res.redchi}
 
-            data = {'model': self.res.model, 'params': self.res.best_values,
+            data = {'params': self.res.best_values,
                     'stats': stats, 'covar': self.res.covar, 'success': self.lastSuccess,
                     'init_values': self.res.init_values, 'nexp': self.nexp}
         else:
-            model = self.res.model if self.res else None
             init_values = self.res.init_values if self.res else {}
-            data = {'success': self.lastSuccess, 'model': model,
+            data = {'success': self.lastSuccess,
                     'init_values': init_values, 'nexp': self.nexp}
         self.bestResults[self.cexp - self.expInterval[0]] = FitResult(**data)
 
