@@ -2,8 +2,7 @@
 import sys
 import h5py
 import copy
-import os
-os.environ["OMP_NUM_THREADS"] = "1"
+from threadpoolctl import threadpool_limits
 
 import numpy as np
 import lmfit as lm
@@ -122,45 +121,46 @@ def main():
         arg_list = [{'data': data[s:s+step], 'errs': errs[s:s+step], 'time': time, 'indexes': (s, s+step), 'names': names[s:s+step], 'group': group, 'fitter': copy.copy(fitMod), 'method':args.method, 'counter': copy.deepcopy(counter)} for s in range(start, data_size, step)]
         # print(arg_list)
         print("Start pool of {} CPU".format(nproc))
-        pool = Pool(processes=nproc)
-        res_par = pool.map_async(pool_fit_one, arg_list)
+        with threadpool_limits(limits=1, user_api='blas'):
+            pool = Pool(processes=nproc)
+            res_par = pool.map_async(pool_fit_one, arg_list)
 
-        pool.close()
-        pool.join()
-        res_par.wait()
-        result = res_par.get()
+            pool.close()
+            pool.join()
+            res_par.wait()
+            result = res_par.get()
 
-        try:
-            for rc, rf, name_string in result:
-                counter = counter + rc
-                for (i, bestRes, anyResult) in rf:
-                    if not anyResult:
-                        pass
-                    else:
-                        for group_hdf, res in zip(exps, bestRes):
-                            if res.success:
-                                # print(res)
-                                group_hdf['params'][i] = res.param_vals
-                                group_hdf['covar'][i]  = res.covar
-                                ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
-                                stat_list = []
-                                for key in STAT_PARAMS_NAMES:
-                                    vals = res.stats
-                                    stat_list += [vals[key]]
+            try:
+                for rc, rf, name_string in result:
+                    counter = counter + rc
+                    for (i, bestRes, anyResult) in rf:
+                        if not anyResult:
+                            pass
+                        else:
+                            for group_hdf, res in zip(exps, bestRes):
+                                if res.success:
+                                    # print(res)
+                                    group_hdf['params'][i] = res.param_vals
+                                    group_hdf['covar'][i]  = res.covar
+                                    ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
+                                    stat_list = []
+                                    for key in STAT_PARAMS_NAMES:
+                                        vals = res.stats
+                                        stat_list += [vals[key]]
 
-                                group_hdf['stats'][i] = tuple(stat_list)
-                                ## КОНЕЦ УПОРОТОГО МОМЕНТА
-                            else:
-                                print("{}: fit failed".format(name_string), file=sys.stderr)
-                                #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
+                                    group_hdf['stats'][i] = tuple(stat_list)
+                                    ## КОНЕЦ УПОРОТОГО МОМЕНТА
+                                else:
+                                    print("{}: fit failed".format(name_string), file=sys.stderr)
+                                    #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
 
-        except Exception as e:
-            print("{}: ERROR in fit".format(name_string), file=sys.stderr)
-            print(type(e), e, file=sys.stderr)
-            #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
+            except Exception as e:
+                print("{}: ERROR in fit".format(name_string), file=sys.stderr)
+                print(type(e), e, file=sys.stderr)
+                #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
-        print("{}: DONE".format(name_string))
+            print("{}: DONE".format(name_string))
 
 
     counter.save('fitStatistic.csv')
