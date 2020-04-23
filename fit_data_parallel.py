@@ -2,6 +2,7 @@
 import sys
 import h5py
 import copy
+import os
 
 import numpy as np
 import lmfit as lm
@@ -16,6 +17,8 @@ from multiprocessing import Pool, cpu_count
 
 STAT_PARAMS_NAMES = ('aic', 'bic', 'chisqr', 'redchi')
 NCPU = cpu_count()
+
+os.system("taskset -p 0xff %d" % os.getpid())
 
 def load_data(args, group):
     if args.type == 'npy':
