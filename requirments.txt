@@ -5,3 +5,4 @@ subprocess
 matplotlib
 lmfit
 tqdm
+pandas

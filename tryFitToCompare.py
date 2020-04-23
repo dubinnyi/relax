@@ -1,9 +1,8 @@
-import classes.fitting as f
+import fitter.fitter as f
 import numpy as np
 
 from argparse import ArgumentParser
-from classes.exp_model import CModel
-
+from fitter.exp_model import CModel
 
 parser = ArgumentParser()
 parser.add_argument("-p", "--pairs", type=str, help="File with atom pairs definition")
@@ -23,7 +22,7 @@ def main():
         meanData.append(np.loadtxt('tmp.csv', delimiter=','))
 
     for arr in meanData:
-        fitModel = f.Fitting(arr[:, 1], arr[:, 2], arr[:, 0])
+        fitModel = f.Fitter(arr[:, 1], arr[:, 2], arr[:, 0])
         for nexp in range(2, 6):
             fitModel.fmodel = CModel(nexp)
             fitModel.fitting()

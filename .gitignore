@@ -1,3 +1,14 @@
 *.todo
 *.pyc
+*.npy
+*.hdf5
+*_pairs.txt
 config_tmp
+
+# Data Files
+
+*.npy
+*.png
+*.hdf
+*.hdf5
+*.csv

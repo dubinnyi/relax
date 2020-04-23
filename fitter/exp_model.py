@@ -1,7 +1,7 @@
 import numpy as np
 
-from lmfit.models import ConstantModel, ExponentialModel
 from lmfit import Model
+from lmfit.models import ConstantModel, ExponentialModel
 
 
 def exp(x, A, T):
@@ -15,6 +15,7 @@ class CModel(Model):
         self.model = ConstantModel()
         self.nexp = 0
         self.errors = None
+        self.params = None
         self.res = None
         for _ in range(nexp):
             self.add_exp()
@@ -35,17 +36,17 @@ class CModel(Model):
             self.model.set_param_hint(currT, value=1.0, min=0)
             cntrl_expr += ' + ' + currA
 
-        pars = self.model.make_params()
-        pars.add('cntrl', value=1, min=1-1e-5, max=1+1e-5)
-        pars['cntrl'].vary = True
-        pars['cntrl'].expr = cntrl_expr
-        return pars
+        self.params = self.model.make_params()
+        self.params.add('cntrl', value=1, min=1-1e-5, max=1+1e-5)
+        self.params['cntrl'].vary = True
+        self.params['cntrl'].expr = cntrl_expr
 
     def fit(self, *args, **kwargs):
         try:
-            self.res = self.model.fit(*args, **kwargs)
+            self.prep_params()
+            self.res = self.model.fit(params=self.params, *args, **kwargs)
         except Exception as e:
-            print("Undefined exception while fit: {} {}".format(type(e), e))
+            print("Undefined exception while fit: {} {}".format(type(e), e), file=sys.stderr)
             raise
         return self.res
 
