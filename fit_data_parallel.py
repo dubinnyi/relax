@@ -3,6 +3,7 @@ import sys
 import h5py
 import copy
 import os
+os.environ["OMP_NUM_THREADS"] = "1"
 
 import numpy as np
 import lmfit as lm
@@ -18,7 +19,7 @@ from multiprocessing import Pool, cpu_count
 STAT_PARAMS_NAMES = ('aic', 'bic', 'chisqr', 'redchi')
 NCPU = cpu_count()
 
-os.system("taskset -p 0xff %d" % os.getpid())
+#os.system("taskset -p 0xff %d" % os.getpid())
 
 def load_data(args, group):
     if args.type == 'npy':
@@ -120,6 +121,7 @@ def main():
         step = csize // nproc
         arg_list = [{'data': data[s:s+step], 'errs': errs[s:s+step], 'time': time, 'indexes': (s, s+step), 'names': names[s:s+step], 'group': group, 'fitter': copy.copy(fitMod), 'method':args.method, 'counter': copy.deepcopy(counter)} for s in range(start, data_size, step)]
         # print(arg_list)
+        print("Start pool of {} CPU".format(nproc))
         pool = Pool(processes=nproc)
         res_par = pool.map_async(pool_fit_one, arg_list)
 
