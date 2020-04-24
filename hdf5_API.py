@@ -60,8 +60,7 @@ class hdfAPI(File):
         return np.array(item['acf']['t'])
 
     def get_timestep(self):
-        item = self._get_zeroTrj()
-        timeline = np.array(item['acf']['t'])
+        timeline = self.get_time()
         return timeline[1] - timeline[0]
 
     def get_names(self, tcf, gname):

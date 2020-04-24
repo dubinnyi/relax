@@ -82,11 +82,14 @@ def main():
                 errs = errs / np.sqrt(args.count_trj)
 
         if args.time_cut != 0:
-            step = file.get_timestep()
-            space_to_del = time_cut / step
+            # step = file.get_timestep()
+            # space_to_del = time_cut // step
             time = np.delete(time, time[1:space_to_del])
             data = np.delete(data, data[1:space_to_del], axis=1)
             errs = np.delete(errs, errs[1:space_to_del], axis=1)
+            time = np.delete(time, time[1:7])
+            data = np.delete(data, data[1:7], axis=1)
+            errs = np.delete(errs, errs[1:7], axis=1)
         ### КОНЕЦ ВРЕМЕННОГО УЧАСТКА
         data_size = data.shape[0]
 

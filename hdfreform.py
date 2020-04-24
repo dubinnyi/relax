@@ -22,9 +22,10 @@ def reform(file, output, tcf='', gname='', time_cut=None):
 
     timeline = file.get_time()
     if time_cut:
-        step = file.get_timestep()
-        space_to_del = time_cut // step
-        timeline = np.delete(timeline, timeline[1:space_to_del])
+        # step = file.get_timestep()
+        # space_to_del = time_cut // step
+        # timeline = np.delete(timeline, timeline[1:space_to_del])
+        timeline = np.delete(timeline, timeline[1:8])
 
     out.create_dataset('time', data=timeline)
     for name in groups:
@@ -39,10 +40,12 @@ def reform(file, output, tcf='', gname='', time_cut=None):
 
             mean, std = file.mean_tcf(tcf, name)
             if time_cut:
-	            step = file.get_timestep()
-	            space_to_del = time_cut // step
-	            mean = np.delete(mean, mean[1:space_to_del], axis=1)
-	            std = np.delete(std, std[1:space_to_del], axis=1)
+	            # step = file.get_timestep()
+	            # space_to_del = time_cut // step
+	            # mean = np.delete(mean, mean[1:space_to_del], axis=1)
+	            mean = np.delete(mean, mean[1:8], axis=1)
+	            # std = np.delete(std, std[1:space_to_del], axis=1)
+	            std = np.delete(std, std[1:8], axis=1)
             gtcf.create_dataset("mean", data=mean)
             gtcf.create_dataset("errs", data=std)
 
@@ -56,7 +59,7 @@ def main():
     parser.add_argument('-o', '--output', required=False, type=str, default='out')
     parser.add_argument('--tcf', required=False, nargs='*', default='')
     parser.add_argument('-g', '--gname', required=False, nargs='*', default='')
-    parser.add_argument('-t', '--time-cut', required=False, default=0, type=float, help='time in ps which need to be cut from timeline')
+    parser.add_argument('-t', '--time-cut', required=False, default=None, type=float, help='time in ps which need to be cut from timeline')
     args = parser.parse_args()
     reform(args.filename, args.output, args.tcf, args.gname, args.time_cut)
 
