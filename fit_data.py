@@ -63,7 +63,7 @@ def main():
     ### ВРЕМЕННЫЕ АРГУМЕНТЫ
     parser.add_argument('-e', '--fix-errors', action="store_true")
     parser.add_argument('-c', '--count-trj', required=False, type=int)
-    parser.add_argument('-t', '--time-cut', required=False, default=0, type=float, help='time in ps which need to be cut from timeline')
+    parser.add_argument('-w', '--time-cut', required=False, default=0, type=float, help='time in ps which need to be cut from timeline')
     ###
     args = parser.parse_args()
     counter = Counter()
