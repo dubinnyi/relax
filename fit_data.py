@@ -78,7 +78,7 @@ def main():
 
         ### ВРЕМЕННЫЙ УЧАСТОК
         if args.fix_errors:
-            if errs != None:
+            if errs is not None:
                 errs = errs / np.sqrt(args.count_trj)
 
         if args.time_cut != 0:
