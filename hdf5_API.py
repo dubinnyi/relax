@@ -4,7 +4,12 @@ import numpy as np
 
 from h5py import File
 
+class hdfError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
 
+    def __str__(self):
+        return self.msg
 
 class hdfAPI(File):
     """docstring for Hdf_API"""
@@ -51,9 +56,12 @@ class hdfAPI(File):
     ### Getters
 
     def get_time(self):
-        self._get_zeroTrj
         item = self._get_zeroTrj()
         return np.array(item['acf']['t'])
+
+    def get_timestep(self):
+        timeline = self.get_time()
+        return timeline[1] - timeline[0]
 
     def get_names(self, tcf, gname):
         items = list(self['/'].values())
@@ -64,17 +72,28 @@ class hdfAPI(File):
         return len(self.get_trjList())
 
     def get_groupList(self, tcf='', traj_name=''):
+        wrong_names = []
         if traj_name and tcf:
             groups = list(self['/'][traj_name][tcf].keys())
-            groups.remove('t')
+
+            for gname in groups:
+                if type(self['/'][traj_name][tcf][gname]) != 'h5py._hl.group.Group':
+                    wrong_names.append(gname)
         elif tcf:
             items = list(self['/'].values())
             groups = list(items[0][tcf].keys())
-            groups.remove('t')
+
+            for gname in groups:
+                if type(items[0][tcf][gname]) != 'h5py._hl.group.Group':
+                    wrong_names.append(gname)
+
         else:
             groups = set(self.get_groupList('acf'))
             groups.update(self.get_groupList('ccf'))
             groups = list(groups)
+
+        for w_el in wrong_names:
+            groups.remove(w_el)
         return sorted(groups)
 
     def get_trjList(self):
@@ -117,6 +136,8 @@ class hdfAPI(File):
                 for gname in groups:
                     # get atoms, cf, gs, names, smarts
                     g = self._get_zeroGroup(tcf, gname)
+                    if type(g) != 'h5py._hl.group.Group':
+                        continue
                     atoms = g['atoms'][()]
                     cf = g['cf']
                     gs = g['group_size']
@@ -124,19 +145,21 @@ class hdfAPI(File):
                     smarts = g['smarts'][()]
                     for group in self.group_iter(tcf, gname):
                         if atoms != group['atoms'][()]:
-                            raise Exception("ERROR!! atoms are not equal")
+                            raise hdfError("ERROR!! atoms are not equal")
                         if cf.shape != group['cf'].shape:
-                            raise Exception("ERROR!! cf are not equal")
+                            raise hdfError("ERROR!! cf are not equal")
                         if gs != group['group_size']:
-                            raise Exception("ERROR!! group size are not equal")
+                            raise hdfError("ERROR!! group size are not equal")
                         if names != group['names'][()]:
-                            raise Exception("ERROR!! names are not equal")
+                            raise hdfError("ERROR!! names are not equal")
                         if smarts != group['smarts'][()]:
-                            raise Exception("ERROR!! smarts are not equal")
+                            raise hdfError("ERROR!! smarts are not equal")
                 return True
-        except Exception as e:
+        except hdfError as e:
             print(e)
             return False
+        except Exception as e:
+            raise e
 
     def check_file(self):
         if self.cmp_t() and self.cmp_groups():
@@ -161,5 +184,4 @@ class hdfAPI(File):
         trjCount = self.get_trjCount()
         if tcf and gname:
             arr = self.array_tcf(tcf, gname)
-        return np.mean(arr, axis=0), np.std(arr, axis=0)
-
+        return np.mean(arr, axis=0), np.std(arr, axis=0) / np.sqrt(trjCount)
