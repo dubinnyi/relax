@@ -23,7 +23,7 @@ def reform(file, output, tcf='', gname='', time_cut=None):
     timeline = file.get_time()
     if time_cut:
         step = file.get_timestep()
-        space_to_del = time_cut / step
+        space_to_del = time_cut // step
         timeline = np.delete(timeline, timeline[1:space_to_del])
 
     out.create_dataset('time', data=timeline)
@@ -40,7 +40,7 @@ def reform(file, output, tcf='', gname='', time_cut=None):
             mean, std = file.mean_tcf(tcf, name)
             if time_cut:
 	            step = file.get_timestep()
-	            space_to_del = time_cut / step
+	            space_to_del = time_cut // step
 	            mean = np.delete(mean, mean[1:space_to_del], axis=1)
 	            std = np.delete(std, std[1:space_to_del], axis=1)
             gtcf.create_dataset("mean", data=mean)
