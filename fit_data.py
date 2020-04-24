@@ -60,6 +60,11 @@ def main():
     parser.add_argument('-g', '--group', nargs='*', default=['NH'], help='Which group you want to fit. Need to fit data from hdf')
     parser.add_argument('--tcf', default='acf', help='Need to fit data from hdf')
     parser.add_argument('-o', '--output', default='out.hdf', help='filename for saving results')
+    ### ВРЕМЕННЫЕ АРГУМЕНТЫ
+    parser.add_argument('-e', '--fix-errors', action="store_true")
+    parser.add_argument('-c', '--count-trj', required=False, type=int)
+    parser.add_argument('-t', '--time-cut', required=False, default=0, type=float, help='time in ps which need to be cut from timeline')
+    ###
     args = parser.parse_args()
     counter = Counter()
     fitMod = Fitter(logger=counter.add_fitInfo, minexp=args.exp_start, maxexp=args.exp_finish, ntry=args.ntry)
@@ -70,6 +75,19 @@ def main():
     for group in args.group:
         counter.set_curGroup(group)
         time, data, errs, names = load_data(args, group)
+
+        ### ВРЕМЕННЫЙ УЧАСТОК
+        if args.fix_errors:
+            if errs:
+                errs = errs / np.sqrt(args.count_trj)
+
+        if args.time_cut != 0:
+            step = file.get_timestep()
+            space_to_del = time_cut / step
+            time = np.delete(time, time[1:space_to_del])
+            data = np.delete(data, data[1:space_to_del], axis=1)
+            errs = np.delete(errs, errs[1:space_to_del], axis=1)
+        ### КОНЕЦ ВРЕМЕННОГО УЧАСТКА
         data_size = data.shape[0]
 
     ## Prepare file for saving results

@@ -56,9 +56,13 @@ class hdfAPI(File):
     ### Getters
 
     def get_time(self):
-        self._get_zeroTrj
         item = self._get_zeroTrj()
         return np.array(item['acf']['t'])
+
+    def get_timestep(self):
+        item = self._get_zeroTrj()
+        timeline = np.array(item['acf']['t'])
+        return timeline[1] - timeline[0]
 
     def get_names(self, tcf, gname):
         items = list(self['/'].values())
@@ -172,5 +176,4 @@ class hdfAPI(File):
         trjCount = self.get_trjCount()
         if tcf and gname:
             arr = self.array_tcf(tcf, gname)
-        return np.mean(arr, axis=0), np.std(arr, axis=0)
-
+        return np.mean(arr, axis=0), np.std(arr, axis=0) / np.sqrt(trjCount)
