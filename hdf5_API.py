@@ -73,19 +73,28 @@ class hdfAPI(File):
         return len(self.get_trjList())
 
     def get_groupList(self, tcf='', traj_name=''):
+        wrong_names = []
         if traj_name and tcf:
             groups = list(self['/'][traj_name][tcf].keys())
-            groups.remove('t')
-            groups.remove('nt')
+
+            for gname in groups:
+                if type(self['/'][traj_name][tcf][gname]) != 'h5py._hl.group.Group':
+                    wrong_names.append(gname)
         elif tcf:
             items = list(self['/'].values())
             groups = list(items[0][tcf].keys())
-            groups.remove('t')
-            groups.remove('nt')
+
+            for gname in groups:
+                if type(items[0][tcf][gname]) != 'h5py._hl.group.Group':
+                    wrong_names.append(gname)
+
         else:
             groups = set(self.get_groupList('acf'))
             groups.update(self.get_groupList('ccf'))
             groups = list(groups)
+
+        for w_el in wrong_names:
+            groups.remove(w_el)
         return sorted(groups)
 
     def get_trjList(self):
