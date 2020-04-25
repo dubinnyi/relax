@@ -71,7 +71,7 @@ class FitResult():
 
     @property
     def paramErrors(self):
-        if not self._param_errs:
+        if not self._param_errs.all():
             self.calc_paramErrs()
         return self._param_errs
 
