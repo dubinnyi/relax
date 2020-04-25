@@ -53,7 +53,7 @@ def main():
     parser.add_argument('-o', '--output', required=False, type=str, default='out')
     parser.add_argument('--tcf', required=False, nargs='*', default='')
     parser.add_argument('-g', '--gname', required=False, nargs='*', default='')
-    parser.add_argument('-t', '--time-cut', required=False, default=0, type=float,\
+    parser.add_argument('-с', '--time-cut', required=False, default=0, type=float,\
                          help='time in ps which need to be cut from timeline')
     args = parser.parse_args()
     reform(args.filename, args.output, args.tcf, args.gname, args.time_cut)
