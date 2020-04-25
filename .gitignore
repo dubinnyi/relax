@@ -1,3 +1,23 @@
 *.todo
 *.pyc
+
+# Data Files
+*.npy
+*.hdf
+*.hdf5
+*.hd5
+*.png
+*_pairs.txt
+*.csv
+
+# temporary files
+*.swp
+*.swo
+
+# dirs
+tmp
+data
 config_tmp
+h5py
+.idea
+
