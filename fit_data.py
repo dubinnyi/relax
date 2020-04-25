@@ -48,6 +48,15 @@ def load_data(args, group):
         (time, func, errs, names) = (None, None, None, None)
     return time, func, errs, names
 
+def prepare_data(time, data, errs, time_cut):
+    step = time[1] - time[0]
+    space_to_del = int(time_cut // step)
+    idx_del = np.arange(1, space_to_del + 1)
+    time = np.delete(time, idx_del)
+    data = np.delete(data, idx_del, axis=1)
+    errs = np.delete(errs, idx_del, axis=1)
+    return time, data, errs
+
 def main():
     parser = ArgumentParser()
     parser.add_argument("filename", type=str)
@@ -60,6 +69,8 @@ def main():
     parser.add_argument('-g', '--group', nargs='*', default=['NH'], help='Which group you want to fit. Need to fit data from hdf')
     parser.add_argument('--tcf', default='acf', help='Need to fit data from hdf')
     parser.add_argument('-o', '--output', default='out.hdf', help='filename for saving results')
+    parser.add_argument('-c', '--time-cut', default=0, type=float,\
+                         help='time in ps which need to be cut from timeline')
     args = parser.parse_args()
     counter = Counter()
     fitMod = Fitter(logger=counter.add_fitInfo, minexp=args.exp_start, maxexp=args.exp_finish, ntry=args.ntry)
@@ -70,6 +81,7 @@ def main():
     for group in args.group:
         counter.set_curGroup(group)
         time, data, errs, names = load_data(args, group)
+        time, data, errs = prepare_data(time, data, errs, args.time_cut)
         data_size = data.shape[0]
 
     ## Prepare file for saving results
@@ -94,12 +106,7 @@ def main():
             bestRes = fitMod.fit(data[i], errs[i], time, method=args.method, name_string = name_string)
 
             try:
-                if not fitMod.anyResult:
-                    pass
-                else:
-                    # print(fitMod.model.res.fit_report())
-                    # if args.type != 'hdf':
-                    #     continue
+                if fitMod.anyResult:
                     for group_hdf, res in zip(exps, bestRes):
                         if res.success:
                             # print(res)
