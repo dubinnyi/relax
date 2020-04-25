@@ -2,7 +2,8 @@ import sys
 
 import numpy as np
 
-from h5py import File
+from h5py import File, Group
+
 
 class hdfError(Exception):
     def __init__(self, msg):
@@ -10,6 +11,7 @@ class hdfError(Exception):
 
     def __str__(self):
         return self.msg
+
 
 class hdfAPI(File):
     """docstring for Hdf_API"""
@@ -77,14 +79,14 @@ class hdfAPI(File):
             groups = list(self['/'][traj_name][tcf].keys())
 
             for gname in groups:
-                if type(self['/'][traj_name][tcf][gname]) != 'h5py._hl.group.Group':
+                if not isinstance(self['/'][traj_name][tcf][gname], (str, Group)):
                     wrong_names.append(gname)
         elif tcf:
             items = list(self['/'].values())
             groups = list(items[0][tcf].keys())
 
             for gname in groups:
-                if type(items[0][tcf][gname]) != 'h5py._hl.group.Group':
+                if not isinstance(items[0][tcf][gname], (str, Group)):
                     wrong_names.append(gname)
 
         else:
@@ -102,18 +104,34 @@ class hdfAPI(File):
     def get_tcfList(self):
         return self._get_zeroTrj().keys()
 
-    def get_TrjInfo(self):
-        pass
+    def get_groupSize(self, tcf, gname):
+        cgroup = self._get_zeroGroup(tcf, gname)
+        if cgroup is not None:
+            return cgroup['group_size'][()]
+
+    # def get_TrjInfo(self):
+    #     pass
 
     def _get_zeroGroup(self, tcf, gname):
         trj = self._get_zeroTrj()
         if gname in trj[tcf].keys():
             return trj[tcf][gname]
-        else:
-            print("ERROR!! {} not in {}".format(gname, tcf))
+
+        print("ERROR!! {} not in {}".format(gname, tcf))
+        return None
 
     def _get_zeroTrj(self):
         return list(self['/'].values())[0]
+
+    ### is have
+
+    def has_group(self, tcf, gname):
+        trj = self._get_zeroTrj()
+        return gname in trj[tcf].keys()
+
+    def has_tcf(self, tcf):
+        trj = self._get_zeroTrj()
+        return tcf in trj.keys()
 
     ### Checkers
 
@@ -136,7 +154,7 @@ class hdfAPI(File):
                 for gname in groups:
                     # get atoms, cf, gs, names, smarts
                     g = self._get_zeroGroup(tcf, gname)
-                    if type(g) != 'h5py._hl.group.Group':
+                    if not isinstance(g, (str, Group)):
                         continue
                     atoms = g['atoms'][()]
                     cf = g['cf']
