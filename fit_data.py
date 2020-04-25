@@ -111,7 +111,7 @@ def main():
                 if not fitMod.anyResult:
                     pass
                 else:
-                    print(fitMod.model.res.fit_report())
+                    # print(fitMod.model.res.fit_report())
                     # if args.type != 'hdf':
                     #     continue
                     for group_hdf, res in zip(exps, bestRes):

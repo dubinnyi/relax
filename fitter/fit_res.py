@@ -117,20 +117,3 @@ class FitResult():
             output += 'Статистики: {}\n'.format(self.stats)
         else:
             output += 'Не удалось выполнить вписывание\n'
-
-
-        self._nexp = nexp
-        self._model = model
-        self._init_values = init_values
-
-        self._param_names = list(params.keys()) if params else None
-        self._param_vals = np.array(list(params.values())) if params else None
-        self._param_errs = None
-
-        self._covar = covar
-        self._stats = stats
-        self.success = success
-
-    def save_npy(self, fid):
-        #TODO
-        pass
