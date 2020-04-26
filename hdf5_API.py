@@ -202,4 +202,4 @@ class hdfAPI(File):
         trjCount = self.get_trjCount()
         if tcf and gname:
             arr = self.array_tcf(tcf, gname)
-        return np.mean(arr, axis=0), np.std(arr, axis=0) / np.sqrt(trjCount)
+        return np.mean(arr, axis=0), np.std(arr, axis=0, ddof=1) / np.sqrt(trjCount - 1)
