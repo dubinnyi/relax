@@ -154,7 +154,7 @@ class Fitter:
             if not self.model.has_covar():
                 info_string = "-- No covariance matrix in result"
             elif not bestFit_once:
-                bestFit_once = Fit_once
+                bestFit_once = fit_once
             elif bestFit_once and bestFit_once.chisqr > fit_once.chisqr:
                 bestFit_once = fit_once
                 info_string = "-- New BEST"
