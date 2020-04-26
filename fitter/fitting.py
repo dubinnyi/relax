@@ -107,7 +107,6 @@ class Fitter:
 
     def fit_NtryNexp(self, **kwargs):
         self.prep_model()
-        fit_ntry = None
         bestFit_ntry = None
         success_ntry = False
         for self.cexp in self.exp_iter():
@@ -120,7 +119,7 @@ class Fitter:
                     bestFit_ntry = fit_ntry
 
                 if self.cexp == self.expInterval[1]:
-                    self.save_result(bestFit_ntry, success_ntry)
+                    self.save_result(fit_ntry, success_ntry)
                     if bestFit_ntry:
                         print("{}: Best CHISQR = {:8.4f}".format(self.name_string, bestFit_ntry.chisqr))
                     else:
@@ -132,13 +131,12 @@ class Fitter:
                       format(self.cexp, self.init_values), file=sys.stderr)
                 success_ntry = False
                 return
-            self.save_result(bestFit_ntry, success_ntry)
+            self.save_result(fit_ntry, success_ntry)
             self.model.add_exp()
             self.init_values = dict(zip(BASE_KEY[:(2*self.cexp + 1)], c.copy(BASE_VAL[:(2*self.cexp + 1)])))
 
     def fit_ntry(self):
         bestFit_once = None
-        fit_once = None
         success_once = False
 
         for itry in range(self.ntry):
@@ -185,6 +183,7 @@ class Fitter:
             init_values = result.init_values if result else {}
             data = {'success': successRate, 'model': model,
                     'init_values': init_values, 'nexp': self.nexp}
+
         self.bestResults[self.cexp - self.expInterval[0]] = FitResult(**data)
 
     # Savings and Results
