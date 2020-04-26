@@ -120,7 +120,7 @@ class Fitter:
                     bestFit_ntry = fit_ntry
 
                 if self.cexp == self.expInterval[1]:
-                    self.save_result()
+                    self.save_result(bestFit_ntry, success_ntry)
                     if bestFit_ntry:
                         print("{}: Best CHISQR = {:8.4f}".format(self.name_string, bestFit_ntry.chisqr))
                     else:
