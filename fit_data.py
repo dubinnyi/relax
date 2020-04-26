@@ -108,28 +108,22 @@ def main():
             bestRes = fitMod.fit(data[i], errs[i], time, method=args.method, name_string = name_string)
 
             try:
-                if not fitMod.anyResult:
-                    pass
-                else:
-                    # print(fitMod.model.res.fit_report())
-                    # if args.type != 'hdf':
-                    #     continue
-                    for group_hdf, res in zip(exps, bestRes):
-                        if res.success:
-                            # print(res)
-                            group_hdf['params'][i] = res.param_vals
-                            group_hdf['covar'][i]  = res.covar
-                            ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
-                            stat_list = []
-                            for key in STAT_PARAMS_NAMES:
-                                vals = res.stats
-                                stat_list += [vals[key]]
+                for group_hdf, res in zip(exps, bestRes):
+                    if res.success:
+                        # print(res)
+                        group_hdf['params'][i] = res.param_vals
+                        group_hdf['covar'][i]  = res.covar
+                        ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
+                        stat_list = []
+                        for key in STAT_PARAMS_NAMES:
+                            vals = res.stats
+                            stat_list += [vals[key]]
 
-                            group_hdf['stats'][i] = tuple(stat_list)
-                            ## КОНЕЦ УПОРОТОГО МОМЕНТА
-                        else:
-                            print("{}: fit failed".format(name_string), file=sys.stderr)
-                            #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
+                        group_hdf['stats'][i] = tuple(stat_list)
+                        ## КОНЕЦ УПОРОТОГО МОМЕНТА
+                    else:
+                        print("{}: fit failed".format(name_string), file=sys.stderr)
+                        #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
 
             except Exception as e:
