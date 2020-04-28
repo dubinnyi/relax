@@ -3,6 +3,7 @@
 
 # Data Files
 *.npy
+*.png
 *.hdf
 *.hdf5
 *.hd5

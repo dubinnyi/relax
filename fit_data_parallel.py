@@ -1,6 +1,8 @@
 #!/usr/bin/python3 -u
 import sys
 import h5py
+import copy
+from threadpoolctl import threadpool_limits
 
 import numpy as np
 import lmfit as lm
@@ -11,9 +13,12 @@ from fitter.exp_model import CModel
 from counter import Counter
 
 from argparse import ArgumentParser
+from multiprocessing import Pool, cpu_count
 
 STAT_PARAMS_NAMES = ('aic', 'bic', 'chisqr', 'redchi')
+NCPU = cpu_count()
 
+#os.system("taskset -p 0xff %d" % os.getpid())
 
 def load_data(args, group):
     if args.type == 'npy':
@@ -37,13 +42,13 @@ def load_data(args, group):
         errs[0] = errs[1]
 
     elif args.type == 'hdf':
-        fd = h5py.File(args.filename, 'r')
-        time = fd['time'][:]
-        func = fd[group][args.tcf]['mean'][:]
-        errs = fd[group][args.tcf]['errs'][:]
-        names = fd[group][args.tcf].attrs['names']
-        names = names.splitlines()
-        errs[:, 0] = errs[:, 1]
+        with h5py.File(args.filename, 'r') as fd:
+            time = fd['time'][:]
+            func = fd[group][args.tcf]['mean'][:]
+            errs = fd[group][args.tcf]['errs'][:]
+            names = fd[group][args.tcf].attrs['names']
+            names = names.splitlines()
+            errs[:, 0] = errs[:, 1]
     else:
         (time, func, errs, names) = (None, None, None, None)
     return time, func, errs, names
@@ -56,6 +61,26 @@ def prepare_data(time, data, errs, time_cut):
     data = np.delete(data, idx_del, axis=1)
     errs = np.delete(errs, idx_del, axis=1)
     return time, data, errs
+
+def pool_fit_one(args):
+    group = args['group']
+    data = args['data']
+    counter = args['counter']
+    fitMod = args['fitter']
+    names = args['names']
+    errs = args['errs']
+    time = args['time']
+    s, f = args['indexes']
+    fitMod.fitResult = counter.add_fitInfo
+
+    parallelResults = [None]
+    for i, ci in zip(range(s, f), range(f-s)):
+        counter.set_curN(names[ci])
+        name_string = "{:10} {:25}".format(group, names[ci])
+        bestRes = fitMod.fit(data[ci], errs[ci], time, method=args['method'], name_string = name_string)
+        parallelResults[ci] = (i, bestRes, fitMod.anyResult)
+        print("{}: DONE".format(name_string))
+    return counter, parallelResults, name_string
 
 def main():
     parser = ArgumentParser()
@@ -72,18 +97,17 @@ def main():
     parser.add_argument('-c', '--time-cut', default=0, type=float,\
                          help='time in ps which need to be cut from timeline')
     args = parser.parse_args()
-    counter = Counter()
-    fitMod = Fitter(logger=counter.add_fitInfo, minexp=args.exp_start, maxexp=args.exp_finish, ntry=args.ntry)
-    counter.set_curMethod(args.method)
-    counter.set_curTcf(args.tcf)
     fid = h5py.File(args.output, 'w')
+    counter = Counter()
 
     for group in args.group:
+        fitMod = Fitter(minexp=args.exp_start, maxexp=args.exp_finish, ntry=args.ntry)
+        counter.set_curMethod(args.method)
+        counter.set_curTcf(args.tcf)
         counter.set_curGroup(group)
         time, data, errs, names = load_data(args, group)
         time, data, errs = prepare_data(time, data, errs, args.time_cut)
         data_size = data.shape[0]
-
 
     ## Prepare file for saving results
         grp = fid.create_group(group)
@@ -97,31 +121,51 @@ def main():
             exp_grp.create_dataset('covar', data=np.zeros((data_size, nparams, nparams)))
             exp_grp.create_dataset('stats', data=u.create_nameArray(data_size, STAT_PARAMS_NAMES))
 
+
+
         start = args.istart if args.istart < data_size else 0
-        for i in range(start, data_size):
-            # set name, not index
-            counter.set_curN(names[i])
-            name_string = "{:10} {:25}".format(group, names[i])
-            bestRes = fitMod.fit(data[i], errs[i], time, method=args.method, name_string = name_string)
+
+        # prepare arguments for parallel fitting
+        csize = data_size - start
+
+        nproc = min(csize, NCPU)
+        step = csize // nproc
+        arg_list = [{'data': data[s:s+step], 'errs': errs[s:s+step], 'time': time, 'indexes': (s, s+step), 'names': names[s:s+step], 'group': group, 'fitter': copy.copy(fitMod), 'method':args.method, 'counter': copy.deepcopy(counter)} for s in range(start, data_size, step)]
+        # print(arg_list)
+        print("Start pool of {} CPU".format(nproc))
+        with threadpool_limits(limits=1, user_api='blas'):
+            pool = Pool(processes=nproc)
+            res_par = pool.map_async(pool_fit_one, arg_list)
+
+            pool.close()
+            pool.join()
+            res_par.wait()
+            result = res_par.get()
 
             try:
+                for rc, rf, name_string in result:
+                    counter = counter + rc
+                    for (i, bestRes, anyResult) in rf:
+                        if not anyResult:
+                            pass
+                        else:
+                            for group_hdf, res in zip(exps, bestRes):
+                                if res.success:
+                                    # print(res)
+                                    group_hdf['params'][i] = res.param_vals
+                                    group_hdf['covar'][i]  = res.covar
+                                    ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
+                                    stat_list = []
+                                    for key in STAT_PARAMS_NAMES:
+                                        vals = res.stats
+                                        stat_list += [vals[key]]
 
-                for group_hdf, res in zip(exps, bestRes):
-                    if res.success:
-                        # print(res)
-                        group_hdf['params'][i] = res.param_vals
-                        group_hdf['covar'][i]  = res.covar
-                        ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
-                        stat_list = []
-                        for key in STAT_PARAMS_NAMES:
-                            vals = res.stats
-                            stat_list += [vals[key]]
+                                    group_hdf['stats'][i] = tuple(stat_list)
+                                    ## КОНЕЦ УПОРОТОГО МОМЕНТА
+                                else:
+                                    print("{}: fit failed".format(name_string), file=sys.stderr)
+                                    #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
-                        group_hdf['stats'][i] = tuple(stat_list)
-                        ## КОНЕЦ УПОРОТОГО МОМЕНТА
-                    else:
-                        print("{}: fit failed".format(name_string), file=sys.stderr)
-                        #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
             except Exception as e:
                 print("{}: ERROR in fit".format(name_string), file=sys.stderr)
@@ -129,6 +173,8 @@ def main():
                 #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
             print("{}: DONE".format(name_string))
+
+
     counter.save('fitStatistic.csv')
     print(counter)
     # fitMod.save_toFile('out')
