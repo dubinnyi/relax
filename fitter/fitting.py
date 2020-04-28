@@ -35,6 +35,7 @@ class Fitter:
         self.init_values = None
 
         self.bestResults = [None] * self.nexp
+        self.anyResult = False
         self.fitInfos = [None] * self.nexp
         self.logger = logger
 
@@ -50,7 +51,6 @@ class Fitter:
     @property
     def nexp(self):
         return self.expInterval[1] + 1 - self.expInterval[0]
-
 
     ## Setters
     @nexp.setter
@@ -159,7 +159,6 @@ class Fitter:
 
             if bestFit_once:
                 success_once = True
-
             print("{}: {} {}". format(name_string_exp_try, chi_sqr_string, info_string))
             self.change_init()
         return bestFit_once, success_once
@@ -175,13 +174,13 @@ class Fitter:
             stats = {'aic': result.aic, 'chisqr': result.chisqr, 'bic': result.bic,
                     'redchi': result.redchi}
 
-            data = {'model': result.model, 'params': result.best_values,
+            data = {'params': result.best_values,
                     'stats': stats, 'covar': result.covar, 'success': successRate,
                     'init_values': result.init_values, 'nexp': self.nexp}
         else:
             model = result.model if result else None
             init_values = result.init_values if result else {}
-            data = {'success': successRate, 'model': model,
+            data = {'success': successRate,
                     'init_values': init_values, 'nexp': self.nexp}
 
         self.bestResults[self.cexp - self.expInterval[0]] = FitResult(**data)

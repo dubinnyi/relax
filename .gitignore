@@ -3,6 +3,7 @@
 
 # Data Files
 *.npy
+*.png
 *.hdf
 *.hdf5
 *.hd5
@@ -13,6 +14,10 @@
 # temporary files
 *.swp
 *.swo
+*~
+
+# logs
+*.log
 
 # dirs
 tmp

@@ -117,7 +117,7 @@ class Counter:
 
             for group in self.data['group'].unique():
                 for exp in self.data['exponent count'].unique():
-                    x.add_row([group, exp, '{:.3f}'.format(self.get_meanTime(group, exp)), '{:.3f}'.format(self.get_allTime(group, exp)), self.get_successCount(group, exp)])
+                    x.add_row([group, exp, '{:.3f}'.format(self.get_meanTime(group, exp)), '{:.3f}'.format(self.get_allTime(group, exp)), '{}/{}'.format(self.get_successCount(group, exp), self.get_funcCount(group, exp))])
                 x.add_row(['Итого', '', '{:.3f}'.format(self.get_meanTime(group)), '{:.3f}'.format(self.get_allTime(group)), "{}/{}".format(self.get_successCount(group), self.get_funcCount(group))])
             output += str(x)
             output += '\n'
@@ -125,3 +125,7 @@ class Counter:
 
     # def add_successRate(self, sucRate):
         # pass
+
+    def __add__(self, other):
+        self.data = self.data.append(other.data, ignore_index=True)
+        return self
