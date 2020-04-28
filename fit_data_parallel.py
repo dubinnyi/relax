@@ -97,7 +97,7 @@ def main():
     parser.add_argument('-c', '--time-cut', default=0, type=float,\
                          help='time in ps which need to be cut from timeline')
     args = parser.parse_args()
-    fid = h5py.File(args.output, 'a')
+    fid = h5py.File(args.output, 'w')
     counter = Counter()
 
     for group in args.group:
