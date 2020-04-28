@@ -147,7 +147,7 @@ def main():
                     counter = counter + rc
                     for (i, bestRes) in rf:
                         for group_hdf, res in zip(exps, bestRes):
-                            if res.success:
+                            if res and res.hasattr('success') and res.success:
                                 # print(res)
                                 group_hdf['params'][i] = res.param_vals
                                 group_hdf['covar'][i]  = res.covar
