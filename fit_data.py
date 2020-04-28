@@ -76,7 +76,7 @@ def main():
     fitMod = Fitter(logger=counter.add_fitInfo, minexp=args.exp_start, maxexp=args.exp_finish, ntry=args.ntry)
     counter.set_curMethod(args.method)
     counter.set_curTcf(args.tcf)
-    fid = h5py.File(args.output, 'w')
+    fid = h5py.File(args.output, 'a')
 
     for group in args.group:
         counter.set_curGroup(group)

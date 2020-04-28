@@ -97,7 +97,7 @@ def main():
     parser.add_argument('-c', '--time-cut', default=0, type=float,\
                          help='time in ps which need to be cut from timeline')
     args = parser.parse_args()
-    fid = h5py.File(args.output, 'w')
+    fid = h5py.File(args.output, 'a')
     counter = Counter()
 
     for group in args.group:
@@ -147,7 +147,7 @@ def main():
                     counter = counter + rc
                     for (i, bestRes) in rf:
                         for group_hdf, res in zip(exps, bestRes):
-                            if res and res.hasattr('success') and res.success:
+                            if res and hasattr(res, 'success') and res.success:
                                 # print(res)
                                 group_hdf['params'][i] = res.param_vals
                                 group_hdf['covar'][i]  = res.covar
