@@ -75,12 +75,13 @@ scipy
 lmfit
 h5py
 prettytable
-pandas**
+pandas 
+multiprocessing**
 
 The utility **hdfview** is usefull for visualisation of input/output hdf5 files
 
 The following commands will resolve recquired dependencies (fedora Linux):
 ````
- > dnf install -y python3-numpy python3-scipy hdfview python3-h5py python3-prettytable python3-pandas
- > pip3 install lmfit
+ > dnf install -y python3-numpy python3-scipy hdfview python3-h5py python3-prettytable python3-pandas python3-libs
+ > pip3 install lmfit threadpoolctl
 ````
