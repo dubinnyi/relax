@@ -71,7 +71,7 @@ def pool_fit_one(args):
     errs = args['errs']
     time = args['time']
     s, f = args['indexes']
-    fitMod.fitResult = counter.add_fitInfo
+    fitMod.logger = counter.add_fitInfo
 
     parallelResults = [None]
     for i, ci in zip(range(s, f), range(f-s)):
@@ -130,7 +130,7 @@ def main():
 
         nproc = min(csize, NCPU)
         step = csize // nproc
-        arg_list = [{'data': data[s:s+step], 'errs': errs[s:s+step], 'time': time, 'indexes': (s, s+step), 'names': names[s:s+step], 'group': group, 'fitter': copy.copy(fitMod), 'method':args.method, 'counter': copy.deepcopy(counter)} for s in range(start, data_size, step)]
+        arg_list = [{'data': data[s:s+step], 'errs': errs[s:s+step], 'time': time, 'indexes': (s, s+step), 'names': names[s:s+step], 'group': group, 'fitter': copy.copy(fitMod), 'method':args.method, 'counter': copy.copy(counter)} for s in range(start, data_size, step)]
         # print(arg_list)
         print("Start pool of {} CPU".format(nproc))
         with threadpool_limits(limits=1, user_api='blas'):
