@@ -59,7 +59,13 @@ class hdfAPI(File):
 
     def get_time(self):
         item = self._get_zeroTrj()
-        return np.array(item['acf']['t'])
+        if 't' in item['acf'].keys():
+            return np.array(item['acf']['t'])
+        elif 'time' in item['acf'].keys():
+            return np.array(item['acf']['time'])
+        else:
+            print("ERROR!! \'time\' or \'t\' array is not found not in {}".format(item))
+            return None
 
     def get_timestep(self):
         timeline = self.get_time()
