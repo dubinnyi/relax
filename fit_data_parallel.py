@@ -120,6 +120,7 @@ def main():
         step = csize // nproc
         arg_list = [{'data': data[s:s+step], 'errs': errs[s:s+step], 'time': time, 'indexes': (s, s+step), 'names': names[s:s+step], 'group': group, 'fitter': copy.copy(fitMod), 'method':args.method, 'counter': copy.deepcopy(counter)} for s in range(start, data_size, step)]
         # print(arg_list)
+        print("Start pool of {} CPU".format(nproc))
         with threadpool_limits(limits=1, user_api='blas'):
             pool = Pool(processes=nproc)
             res_par = pool.map_async(pool_fit_one, arg_list)

@@ -4,7 +4,6 @@ import numpy as np
 from argparse import ArgumentParser
 from fitter.exp_model import CModel
 
-
 parser = ArgumentParser()
 parser.add_argument("-p", "--pairs", type=str, help="File with atom pairs definition")
 parser.add_argument("-f", "--func", type=str, help="File with acf or ccf")
