@@ -62,7 +62,7 @@ class FitResult():
 
     @property
     def paramErrors(self):
-        if not self._param_errs:
+        if not self._param_errs.all():
             self.calc_paramErrs()
         return self._param_errs
 
@@ -93,5 +93,4 @@ class FitResult():
             output += 'Статистики: {}\n'.format(self.stats)
         else:
             output += 'Не удалось выполнить вписывание\n'
-
         return output
