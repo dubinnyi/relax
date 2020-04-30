@@ -73,7 +73,7 @@ def pool_fit_one(args):
     s, f = args['indexes']
     fitMod.logger = counter.add_fitInfo
 
-    parallelResults = [None]
+    parallelResults = [None]*(f-s)
     for i, ci in zip(range(s, f), range(f-s)):
         counter.set_curN(names[ci])
         name_string = "{:10} {:25}".format(group, names[ci])
