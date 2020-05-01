@@ -38,6 +38,8 @@ def load_data(args, group):
 
     elif args.type == 'hdf':
         fd = h5py.File(args.filename, 'r')
+        if group not in fd.keys():
+            raise Exception("Wrong groupname")
         time = fd['time'][:]
         func = fd[group][args.tcf]['mean'][:]
         errs = fd[group][args.tcf]['errs'][:]
@@ -73,23 +75,28 @@ def main():
                          help='time in ps which need to be cut from timeline')
     args = parser.parse_args()
     counter = Counter()
-    fitMod = Fitter(logger=counter.add_fitInfo, minexp=args.exp_start, maxexp=args.exp_finish, ntry=args.ntry)
+    fitMod = Fitter(logger=counter.add_fitInfo, minexp=args.exp_start, maxexp=args.exp_finish, ntry=args.ntry, tcf_type=args.tcf)
     counter.set_curMethod(args.method)
     counter.set_curTcf(args.tcf)
     fid = h5py.File(args.output, 'w')
 
     for group in args.group:
         counter.set_curGroup(group)
-        time, data, errs, names = load_data(args, group)
-        time, data, errs = prepare_data(time, data, errs, args.time_cut)
-        data_size = data.shape[0]
+        try:
+            time, data, errs, names = load_data(args, group)
+            time, data, errs = prepare_data(time, data, errs, args.time_cut)
+        except Exception as e:
+            print(e)
+            continue
 
+        data_size = data.shape[0]
 
     ## Prepare file for saving results
         grp = fid.create_group(group)
+        tcf_grp = grp.create_group(args.tcf)
         exps = []
         for i in fitMod.exp_iter():
-            cexp = grp.create_group('exp{}'.format(i))
+            cexp = tcf_grp.create_group('exp{}'.format(i))
             exps.append(cexp)
         for exp_grp, i in zip(exps, range(args.exp_start, args.exp_finish + 1)):
             nparams = 2 * i + 1
@@ -105,7 +112,6 @@ def main():
             bestRes = fitMod.fit(data[i], errs[i], time, method=args.method, name_string = name_string)
 
             try:
-
                 for group_hdf, res in zip(exps, bestRes):
                     if res.success:
                         # print(res)
@@ -122,6 +128,7 @@ def main():
                     else:
                         print("{}: fit failed".format(name_string), file=sys.stderr)
                         #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
+
 
             except Exception as e:
                 print("{}: ERROR in fit".format(name_string), file=sys.stderr)
