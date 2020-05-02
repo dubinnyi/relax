@@ -104,7 +104,7 @@ class Fitter:
         length = y.shape[0]
         x = self.time
         #################
-        return self.model.fit(y, x=x, tcf_type=self.tcf_type, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values)
+        return self.model.fit(data=y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values, tcf_type=self.tcf_type)
 
     def fit_NtryNexp(self, **kwargs):
         self.prep_model()
@@ -175,13 +175,13 @@ class Fitter:
             stats = {'aic': result.aic, 'chisqr': result.chisqr, 'bic': result.bic,
                     'redchi': result.redchi}
 
-            data = {'model': result.model, 'params': result.best_values,
+            data = {'params': result.best_values,
                     'stats': stats, 'covar': result.covar, 'success': successRate,
                     'init_values': result.init_values, 'nexp': self.nexp}
         else:
             model = result.model if result else None
             init_values = result.init_values if result else {}
-            data = {'success': successRate, 'model': model,
+            data = {'success': successRate,
                     'init_values': init_values, 'nexp': self.nexp}
 
         self.bestResults[self.cexp - self.expInterval[0]] = FitResult(**data)
