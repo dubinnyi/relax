@@ -19,7 +19,7 @@ BASE_KEY = ('c', 'adecay', 'aamplitude', 'bdecay', 'bamplitude', 'cdecay', 'camp
 rndmizer = np.random.RandomState()
 
 class Fitter:
-    def __init__(self, minexp=4, maxexp=6, randFactor=(.2, 5), ntry=5, logger=print):
+    def __init__(self, minexp=4, maxexp=6, randFactor=(.2, 5), ntry=5, tcf_type='acf', logger=print):
         self.model = None
         self.ntry  = ntry
         self.randFactor  = randFactor
@@ -30,6 +30,7 @@ class Fitter:
         self.std  = None
         self.time = None
 
+        self.tcf_type = tcf_type
         self.cexp = 0
         self.params  = None
         self.init_values = None
@@ -103,7 +104,7 @@ class Fitter:
         length = y.shape[0]
         x = self.time
         #################
-        return self.model.fit(y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values)
+        return self.model.fit(data=y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values, tcf_type=self.tcf_type)
 
     def fit_NtryNexp(self, **kwargs):
         self.prep_model()
