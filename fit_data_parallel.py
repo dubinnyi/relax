@@ -43,6 +43,8 @@ def load_data(args, group):
 
     elif args.type == 'hdf':
         with h5py.File(args.filename, 'r') as fd:
+            if group not in fd.keys():
+                raise Exception("Wrong groupname")
             time = fd['time'][:]
             func = fd[group][args.tcf]['mean'][:]
             errs = fd[group][args.tcf]['errs'][:]
@@ -70,16 +72,16 @@ def pool_fit_one(args):
     names = args['names']
     errs = args['errs']
     time = args['time']
-    s, f = args['indexes']
-    fitMod.logger = counter.add_fitInfo
+    i = args['idx']
+    fitMod.fitResult = counter.add_fitInfo
 
-    parallelResults = [None]*(f-s)
-    for i, ci in zip(range(s, f), range(f-s)):
-        counter.set_curN(names[ci])
-        name_string = "{:10} {:25}".format(group, names[ci])
-        bestRes = fitMod.fit(data[ci], errs[ci], time, method=args['method'], name_string = name_string)
-        parallelResults[ci] = (i, bestRes)
-        print("{}: DONE".format(name_string))
+    parallelResults = [None]
+
+    counter.set_curN(names)
+    name_string = "{:10} {:25}".format(group, names)
+    bestRes = fitMod.fit(data, errs, time, method=args['method'], name_string = name_string)
+    parallelResults = (i, bestRes)
+    print("{}: DONE".format(name_string))
     return counter, parallelResults, name_string
 
 def main():
@@ -105,8 +107,14 @@ def main():
         counter.set_curMethod(args.method)
         counter.set_curTcf(args.tcf)
         counter.set_curGroup(group)
-        time, data, errs, names = load_data(args, group)
-        time, data, errs = prepare_data(time, data, errs, args.time_cut)
+
+        try:
+            time, data, errs, names = load_data(args, group)
+            time, data, errs = prepare_data(time, data, errs, args.time_cut)
+        except Exception as e:
+            print(e)
+            continue
+
         data_size = data.shape[0]
 
     ## Prepare file for saving results
@@ -125,16 +133,11 @@ def main():
 
         start = args.istart if args.istart < data_size else 0
 
-        # prepare arguments for parallel fitting
-        csize = data_size - start
-
-        nproc = min(csize, NCPU)
-        step = csize // nproc
-        arg_list = [{'data': data[s:s+step], 'errs': errs[s:s+step], 'time': time, 'indexes': (s, s+step), 'names': names[s:s+step], 'group': group, 'fitter': copy.copy(fitMod), 'method':args.method, 'counter': copy.copy(counter)} for s in range(start, data_size, step)]
+        arg_list = [{'data': data[i], 'errs': errs[i], 'time': time, 'idx': i, 'names': names[i], 'group': group, 'fitter': copy.copy(fitMod), 'method':args.method, 'counter': copy.deepcopy(counter)} for i in range(start, data_size)]
         # print(arg_list)
-        print("Start pool of {} CPU".format(nproc))
+        # print("Start pool of {} CPU".format(nproc))
         with threadpool_limits(limits=1, user_api='blas'):
-            pool = Pool(processes=nproc)
+            pool = Pool()
             res_par = pool.map_async(pool_fit_one, arg_list)
 
             pool.close()
@@ -161,13 +164,10 @@ def main():
                                 ## КОНЕЦ УПОРОТОГО МОМЕНТА
                             else:
                                 print("{}: fit failed".format(name_string), file=sys.stderr)
-                                #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
-
 
             except Exception as e:
                 print("{}: ERROR in fit".format(name_string), file=sys.stderr)
                 print(type(e), e, file=sys.stderr)
-                #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
             print("{}: DONE".format(name_string))
 
