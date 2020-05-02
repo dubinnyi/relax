@@ -73,15 +73,14 @@ def pool_fit_one(args):
     errs = args['errs']
     time = args['time']
     i = args['idx']
-    fitMod.fitResult = counter.add_fitInfo
-
-    parallelResults = [None]
-
+    fitMod.logger = counter.add_fitInfo
+    
     counter.set_curN(names)
     name_string = "{:10} {:25}".format(group, names)
     bestRes = fitMod.fit(data, errs, time, method=args['method'], name_string = name_string)
     parallelResults = (i, bestRes)
     print("{}: DONE".format(name_string))
+
     return counter, parallelResults, name_string
 
 def main():
@@ -129,10 +128,9 @@ def main():
             exp_grp.create_dataset('covar', data=np.zeros((data_size, nparams, nparams)))
             exp_grp.create_dataset('stats', data=u.create_nameArray(data_size, STAT_PARAMS_NAMES))
 
-
-
         start = args.istart if args.istart < data_size else 0
-
+      
+        # prepare arguments for parallel fitting
         arg_list = [{'data': data[i], 'errs': errs[i], 'time': time, 'idx': i, 'names': names[i], 'group': group, 'fitter': copy.copy(fitMod), 'method':args.method, 'counter': copy.deepcopy(counter)} for i in range(start, data_size)]
         # print(arg_list)
         # print("Start pool of {} CPU".format(nproc))
