@@ -41,7 +41,7 @@ class CModel(Model):
             currA = amp.format(Prefixes[i])
             currT = dec.format(Prefixes[i])
             self.model.set_param_hint(currA, value=1, min=-1.5, max=1.5)
-            self.model.set_param_hint(currT, value=1, min=-1.5, max=1.5)
+            self.model.set_param_hint(currT, value=1, min=0)
 
         self.params = self.model.make_params()
 
