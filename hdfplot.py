@@ -28,11 +28,39 @@ import matplotlib.pyplot as plt
 
 from argparse import ArgumentParser
 
+def param_autodetect(param):
+    evenlist= param[0::2]
+    oddlist= param[1::2]
+    type = None
+    print("evenlist {}".format(evenlist.shape))
+    print("oddlist {}".format(oddlist.shape))
+    if max(oddlist)>max(evenlist):
+        # hint for swapped time/amplitude
+        # acf, time in even indexes, free coeff is last
+        type = 'acf'
+        print("expall acf")
+        tau= oddlist
+        ampl= evenlist[:-1]
+        coeff= evenlist[-1]
+        print("tau {}".format(tau.shape))
+        print("ampl {}".format(ampl.shape))
+    else:
+        # hint for swapped time/amplitude
+        # ccf, time in odd indexes, free coeff is last
+        type = 'ccf'
+        print("expall ccf")
+        tau= evenlist[:-1]
+        ampl= oddlist
+        coeff= evenlist[-1]
+        print("tau {}".format(tau.shape))
+        print("ampl {}".format(ampl.shape))
+    return tau, ampl, coeff, type
+
 def expall(param,arrtime):
-    nexp=(param.shape[0]-1)//2
-    out=np.copy(param[-1])
-    for i in range(nexp):
-        out = out + param[2*i]*np.exp(arrtime/(-param[2*i+1]))
+    tau, ampl, coeff, type = param_autodetect(param)
+    out=np.copy(coeff)
+    for i in range(tau.shape[0]):
+        out = out + ampl[i]*np.exp(arrtime/(-tau[i]))
     return out
 
 
@@ -75,13 +103,18 @@ def main(args):
             print("Exponents '{}' not found in {}/{}".format(" ".join(exps_args),
                                 args.fit_file, args.group), sys.stderr)
             return None
+        print("exps in file: {}".format(exps_infile))
         params = {}
         stats = {}
         taus = {}
         for exp in exps_infile:
             params[exp]= fd_exps[exp]['params'][:]
             stats[exp] = fd_exps[exp]['stats'][:]
-            taus[exp]  = params[exp][:,1::2]
+            auto_pars = param_autodetect(params[exp][0,:])
+            if auto_pars[-1] == 'acf':
+                taus[exp]= params[exp][:,1::2]
+            else:
+                taus[exp]= params[exp][:,0:-1:2]
             # print("params[{}].shape: {}".format(exp, params[exp].shape))
             # print("stats[{}].shape: {}".format(exp, stats[exp].shape))
         # exp4=np.array(fd.get('{}/exp4/params'.format(args.group)))
@@ -106,11 +139,11 @@ def main(args):
         labels = {}
         for exp in exps_infile:
             if args.chisqr:
-                stats_exp = stats[exp]
+                #stats_exp = stats[exp]
                 # print("stats_exp: {}".format(stats_exp))
-                stats_exp_res = stats_exp[res]
+                #stats_exp_res = stats_exp[res]
                 # print("stats_exp_res: {}".format(stats_exp_res))
-                labels[exp] = '{} {:>8.2f}'.format(exp, stats_exp_res[2])
+                labels[exp] = '{} {:>8.2f}'.format(exp, stats[exp][res][2])
             else:
                 labels[exp] = exp
             # label4 = '4 exps {:>7.2f}'.format(stat4[res][2])
@@ -118,6 +151,7 @@ def main(args):
             # label6 = '6 exps {:>7.2f}'.format(stat6[res][2])
         # else:
         #     (label4, label5, label6) = ('4 exps', '5 exps', '6 exps')
+        print("labels: {}".format(labels))
 
         fig,ax=plt.subplots(1,2, figsize=(10,5))
         fig.suptitle(names[res])
@@ -136,7 +170,7 @@ def main(args):
             colors[exp] = 'C{}'.format(c+1)
             styles[exp] = line_styles_list[c % len(line_styles_list)]
             c+=1
-            if params[exp][res,-1]>0:
+            if max(params[exp][res,:])>0:
                 ax[0].plot(time + 1, expall(params[exp][res], time),
                            label=labels[exp], zorder=10, color=colors[exp])
         # for expdata, explabel, col in zip((exp4, exp5, exp6),
@@ -153,7 +187,7 @@ def main(args):
             #         (tau4[res], tau5[res], tau6[res]),
             #         ('C1', 'C2', 'C3'),
             #         ('dashdot', 'dashed', 'dotted')):
-                for t in taus[exp]:
+                for t in taus[exp][res]:
                     if t < time[-1]:
                         ax[0].axvline(t, linestyle=styles[exp], color=colors[exp])
                     if t < time[ntime+1]:
@@ -171,7 +205,7 @@ def main(args):
         for exp in exps_infile:
         # for expdata, explabel, col  in zip((exp4, exp5, exp6),
         #                                    (label4, label5, label6), ('C1', 'C2', 'C3')):
-            if(params[exp][res,-1]>0):
+            if(max(params[exp][res,:])>0):
                 ax[1].plot((time[1:ntime]+1),
                            expall(params[exp][res,:ntime],
                                   time[:ntime])[1:],
