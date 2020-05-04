@@ -169,7 +169,7 @@ def main(args):
         for exp in exps_infile:
             colors[exp] = 'C{}'.format(c+1)
             styles[exp] = line_styles_list[c % len(line_styles_list)]
-            c+=1
+            c += 1
             if max(params[exp][res,:])>0:
                 ax[0].plot(time + 1, expall(params[exp][res], time),
                            label=labels[exp], zorder=10, color=colors[exp])
