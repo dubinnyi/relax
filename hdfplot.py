@@ -28,11 +28,39 @@ import matplotlib.pyplot as plt
 
 from argparse import ArgumentParser
 
+def param_autodetect(param):
+    evenlist= param[0::2]
+    oddlist= param[1::2]
+    type = None
+    print("evenlist {}".format(evenlist.shape))
+    print("oddlist {}".format(oddlist.shape))
+    if max(oddlist)>max(evenlist):
+        # hint for swapped time/amplitude
+        # acf, time in even indexes, free coeff is last
+        type = 'acf'
+        print("expall acf")
+        tau= oddlist
+        ampl= evenlist[:-1]
+        coeff= evenlist[-1]
+        print("tau {}".format(tau.shape))
+        print("ampl {}".format(ampl.shape))
+    else:
+        # hint for swapped time/amplitude
+        # ccf, time in odd indexes, free coeff is last
+        type = 'ccf'
+        print("expall ccf")
+        tau= evenlist[:-1]
+        ampl= oddlist
+        coeff= evenlist[-1]
+        print("tau {}".format(tau.shape))
+        print("ampl {}".format(ampl.shape))
+    return tau, ampl, coeff, type
+
 def expall(param,arrtime):
-    nexp=(param.shape[0]-1)//2
-    out=np.copy(param[-1])
-    for i in range(nexp):
-        out = out + param[2*i]*np.exp(arrtime/(-param[2*i+1]))
+    tau, ampl, coeff, type = param_autodetect(param)
+    out=np.copy(coeff)
+    for i in range(tau.shape[0]):
+        out = out + ampl[i]*np.exp(arrtime/(-tau[i]))
     return out
 
 
@@ -44,8 +72,8 @@ def main(args):
     parser.add_argument('--tcf', default='acf', help='Need to fit data from hdf')
     parser.add_argument('--timelines', action='store_true', help='Shoe grid line for each time value')
     parser.add_argument('--chisqr', action='store_true', help='Shoe grid line for each time value')
-    # parser.add_argument('-s', '--exp-start', default=4, type=int, help='Number of exponents to start from')
-    # parser.add_argument('-f', '--exp-finish', default=6, type=int, help='Number of exponents when finish')
+    parser.add_argument('--exp-start', default=4, type=int, help='Number of exponents to start from')
+    parser.add_argument('--exp-finish', default=6, type=int, help='Number of exponents when finish')
     args = parser.parse_args()
 
     with h5py.File(args.data_file, 'r') as fd:
@@ -57,22 +85,48 @@ def main(args):
         names = fd[args.group][args.tcf].attrs['names']
         names = names.splitlines()
 
-    with h5py.File(args.fit_file, 'r') as f:
-        exp4=np.array(f.get('{}/exp4/params'.format(args.group)))
-        exp5=np.array(f.get('{}/exp5/params'.format(args.group)))
-        exp6=np.array(f.get('{}/exp6/params'.format(args.group)))
-        stat4 = np.array(f.get('{}/exp4/stats'.format(args.group)))
-        stat5 = np.array(f.get('{}/exp5/stats'.format(args.group)))
-        stat6 = np.array(f.get('{}/exp6/stats'.format(args.group)))
+    with h5py.File(args.fit_file, 'r') as fd:
+        group_list = [g for g in fd]
+        if not args.group in group_list:
+            print("Group {} not found in file {}".format(args.group, args.fit_file), sys.stderr)
+            return None
+        item_list = [item for item in fd[args.group]]
+        if args.tcf in item_list:
+            fd_exps = fd[args.group][args.tcf]
+        else:
+            # Backward compatibility - no 'acf/ccf' was in previous versions
+            fd_exps = fd[args.group]
+        exps_range = range(args.exp_start, args.exp_finish + 1)
+        exps_args = ['exp{}'.format(e) for e in exps_range]
+        exps_infile = [exp for exp in fd_exps if exp in exps_args]
+        if not exps_infile:
+            print("Exponents '{}' not found in {}/{}".format(" ".join(exps_args),
+                                args.fit_file, args.group), sys.stderr)
+            return None
+        print("exps in file: {}".format(exps_infile))
+        params = {}
+        stats = {}
+        taus = {}
+        for exp in exps_infile:
+            params[exp]= fd_exps[exp]['params'][:]
+            stats[exp] = fd_exps[exp]['stats'][:]
+            auto_pars = param_autodetect(params[exp][0,:])
+            if auto_pars[-1] == 'acf':
+                taus[exp]= params[exp][:,1::2]
+            else:
+                taus[exp]= params[exp][:,0:-1:2]
+            # print("params[{}].shape: {}".format(exp, params[exp].shape))
+            # print("stats[{}].shape: {}".format(exp, stats[exp].shape))
+        # exp4=np.array(fd.get('{}/exp4/params'.format(args.group)))
+        # exp5=np.array(fd.get('{}/exp5/params'.format(args.group)))
+        # exp6=np.array(fd.get('{}/exp6/params'.format(args.group)))
+        # stat4 = np.array(fd.get('{}/exp4/stats'.format(args.group)))
+        # stat5 = np.array(fd.get('{}/exp5/stats'.format(args.group)))
+        # stat6 = np.array(fd.get('{}/exp6/stats'.format(args.group)))
 
-    # with h5py.File(args.name_file, 'r') as f:
-    # 	rlist=np.array(f.get('GB1_a15fb_npt_rand2_S01/{}/{}/names'.format(args.tcf, args.group)))
-    # 	names=rlist.astype(str)[()].split('\n')
-    # 	print(names,len(names),type(names))
-
-    tau4 = exp4[:,1::2]
-    tau5 = exp5[:,1::2]
-    tau6 = exp6[:,1::2]
+    # tau4 = exp4[:,1::2]
+    # tau5 = exp5[:,1::2]
+    # tau6 = exp6[:,1::2]
     #chisqr4 = stat4[:][2]
     #chisqr5 = stat5[:][2]
     #chisqr6 = stat6[:][2]
@@ -80,13 +134,24 @@ def main(args):
     # print("exp4.shape={}".format(exp4.shape))
     # print("tau4.shape={}".format(tau4.shape))
 
+
     for res in range(mean.shape[0]):
-        if args.chisqr:
-            label4 = '4 exps {:>7.2f}'.format(stat4[res][2])
-            label5 = '5 exps {:>7.2f}'.format(stat5[res][2])
-            label6 = '6 exps {:>7.2f}'.format(stat6[res][2])
-        else:
-            (label4, label5, label6) = ('4 exps', '5 exps', '6 exps')
+        labels = {}
+        for exp in exps_infile:
+            if args.chisqr:
+                #stats_exp = stats[exp]
+                # print("stats_exp: {}".format(stats_exp))
+                #stats_exp_res = stats_exp[res]
+                # print("stats_exp_res: {}".format(stats_exp_res))
+                labels[exp] = '{} {:>8.2f}'.format(exp, stats[exp][res][2])
+            else:
+                labels[exp] = exp
+            # label4 = '4 exps {:>7.2f}'.format(stat4[res][2])
+            # label5 = '5 exps {:>7.2f}'.format(stat5[res][2])
+            # label6 = '6 exps {:>7.2f}'.format(stat6[res][2])
+        # else:
+        #     (label4, label5, label6) = ('4 exps', '5 exps', '6 exps')
+        print("labels: {}".format(labels))
 
         fig,ax=plt.subplots(1,2, figsize=(10,5))
         fig.suptitle(names[res])
@@ -99,23 +164,34 @@ def main(args):
                            yerr=errs[res,xsel], fmt=' ',zorder=0, color='C0')
         ax[0].set_xscale('log')
 
-        for expdata, explabel, col in zip((exp4, exp5, exp6),
-                                          (label4, label5, label6), ('C1', 'C2', 'C3')):
-            if(expdata[res,-1]>0):
-                ax[0].plot(time+1, expall(expdata[res],time),
-                           label=explabel, zorder=10, color=col)
+        line_styles_list = ['dashdot', 'dashed', 'dotted']
+        colors, styles, c= {}, {}, 0
+        for exp in exps_infile:
+            colors[exp] = 'C{}'.format(c+1)
+            styles[exp] = line_styles_list[c % len(line_styles_list)]
+            c += 1
+            if max(params[exp][res,:])>0:
+                ax[0].plot(time + 1, expall(params[exp][res], time),
+                           label=labels[exp], zorder=10, color=colors[exp])
+        # for expdata, explabel, col in zip((exp4, exp5, exp6),
+        #                                   (label4, label5, label6), ('C1', 'C2', 'C3')):
+        #     if(expdata[res,-1]>0):
+        #         ax[0].plot(time+1, expall(expdata[res],time),
+        #                    label=explabel, zorder=10, color=col)
+
 
         ntime = 200
         if args.timelines:
-            for tau, col, style in zip(
-                    (tau4[res], tau5[res], tau6[res]),
-                    ('C1', 'C2', 'C3'),
-                    ('dashdot', 'dashed', 'dotted')):
-                for t in tau:
+            for exp in exps_infile:
+            # for tau, col, style in zip(
+            #         (tau4[res], tau5[res], tau6[res]),
+            #         ('C1', 'C2', 'C3'),
+            #         ('dashdot', 'dashed', 'dotted')):
+                for t in taus[exp][res]:
                     if t < time[-1]:
-                        ax[0].axvline(t, linestyle=style, color=col)
+                        ax[0].axvline(t, linestyle=styles[exp], color=colors[exp])
                     if t < time[ntime+1]:
-                        ax[1].axvline(t, linestyle=style, color=col)
+                        ax[1].axvline(t, linestyle=styles[exp], color=colors[exp])
 
         ax[0].legend()
 
@@ -126,13 +202,14 @@ def main(args):
                        yerr=errs[res,7:ntime],fmt=' ',zorder=0)
         ax[1].set_xscale('log')
         ylim=ax[1].get_ylim()
-        for expdata, explabel, col  in zip((exp4, exp5, exp6),
-                                           (label4, label5, label6), ('C1', 'C2', 'C3')):
-            if(expdata[res,-1]>0):
+        for exp in exps_infile:
+        # for expdata, explabel, col  in zip((exp4, exp5, exp6),
+        #                                    (label4, label5, label6), ('C1', 'C2', 'C3')):
+            if(max(params[exp][res,:])>0):
                 ax[1].plot((time[1:ntime]+1),
-                           expall(expdata[res,:ntime],
+                           expall(params[exp][res,:ntime],
                                   time[:ntime])[1:],
-                           label=explabel, zorder=10, color=col)
+                           label=labels[exp], zorder=10, color=colors[exp])
         ax[1].set_ylim(ylim)
         ax[1].legend()
         plt.show()

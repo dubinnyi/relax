@@ -75,7 +75,8 @@ def main():
                          help='time in ps which need to be cut from timeline')
     args = parser.parse_args()
     counter = Counter()
-    fitMod = Fitter(logger=counter.add_fitInfo, minexp=args.exp_start, maxexp=args.exp_finish, ntry=args.ntry, tcf_type=args.tcf)
+    fitMod = Fitter(logger=counter.add_fitInfo, minexp=args.exp_start, maxexp=args.exp_finish,
+                    ntry=args.ntry, tcf_type=args.tcf)
     counter.set_curMethod(args.method)
     counter.set_curTcf(args.tcf)
     fid = h5py.File(args.output, 'w')

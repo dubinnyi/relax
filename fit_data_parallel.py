@@ -73,15 +73,14 @@ def pool_fit_one(args):
     errs = args['errs']
     time = args['time']
     i = args['idx']
-    fitMod.fitResult = counter.add_fitInfo
-
-    parallelResults = [None]
-
+    fitMod.logger = counter.add_fitInfo
+    
     counter.set_curN(names)
     name_string = "{:10} {:25}".format(group, names)
     bestRes = fitMod.fit(data, errs, time, method=args['method'], name_string = name_string)
     parallelResults = (i, bestRes)
     print("{}: DONE".format(name_string))
+
     return counter, parallelResults, name_string
 
 def main():
@@ -103,7 +102,8 @@ def main():
     counter = Counter()
 
     for group in args.group:
-        fitMod = Fitter(minexp=args.exp_start, maxexp=args.exp_finish, ntry=args.ntry)
+        fitMod = Fitter(minexp=args.exp_start, maxexp=args.exp_finish,
+                        ntry=args.ntry, tcf_type=args.tcf)
         counter.set_curMethod(args.method)
         counter.set_curTcf(args.tcf)
         counter.set_curGroup(group)
@@ -119,9 +119,10 @@ def main():
 
     ## Prepare file for saving results
         grp = fid.create_group(group)
+        tcf_grp = grp.create_group(args.tcf)
         exps = []
         for i in fitMod.exp_iter():
-            cexp = grp.create_group('exp{}'.format(i))
+            cexp = tcf_grp.create_group('exp{}'.format(i))
             exps.append(cexp)
         for exp_grp, i in zip(exps, range(args.exp_start, args.exp_finish + 1)):
             nparams = 2 * i + 1
@@ -129,11 +130,13 @@ def main():
             exp_grp.create_dataset('covar', data=np.zeros((data_size, nparams, nparams)))
             exp_grp.create_dataset('stats', data=u.create_nameArray(data_size, STAT_PARAMS_NAMES))
 
-
-
         start = args.istart if args.istart < data_size else 0
 
-        arg_list = [{'data': data[i], 'errs': errs[i], 'time': time, 'idx': i, 'names': names[i], 'group': group, 'fitter': copy.copy(fitMod), 'method':args.method, 'counter': copy.deepcopy(counter)} for i in range(start, data_size)]
+        # prepare arguments for parallel fitting
+        arg_list = [{'data': data[i], 'errs': errs[i], 'time': time,
+                     'idx': i, 'names': names[i], 'group': group,
+                     'fitter': copy.copy(fitMod), 'method':args.method,
+                     'counter': copy.deepcopy(counter)} for i in range(start, data_size)]
         # print(arg_list)
         # print("Start pool of {} CPU".format(nproc))
         with threadpool_limits(limits=1, user_api='blas'):
@@ -150,7 +153,7 @@ def main():
                     counter = counter + rc
                     for (i, bestRes) in rf:
                         for group_hdf, res in zip(exps, bestRes):
-                            if res.success:
+                            if res and hasattr(res, 'success') and res.success:
                                 # print(res)
                                 group_hdf['params'][i] = res.param_vals
                                 group_hdf['covar'][i]  = res.covar
