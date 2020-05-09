@@ -103,7 +103,7 @@ class Fitter:
         length = y.shape[0]
         x = self.time
         #################
-        return self.model.fit(y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values)
+        return self.model.fit(y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', scale_covar=False, **init_values)
 
     def fit_NtryNexp(self, **kwargs):
         self.prep_model()
