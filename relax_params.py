@@ -1,3 +1,5 @@
+#!/usr/bin/python3 -u
+
 import h5py
 
 import numpy as np
