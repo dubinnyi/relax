@@ -144,6 +144,7 @@ relGroups = [[1],  [2],  [3],  [4],  [5],  [6],  [7],  [8],  [9],  [10],
              [41], [42], [43], [44], [45], [46], [47], [48], [49], [50],
              [51], [52], [53], [54], [55], [56], [57], [58], [59], [60]]
 
+# not used
 newTauC = 2974.0
 
 
@@ -162,9 +163,9 @@ h = 6.6260689633 * 10 ** (-34)
 
 # exact Larmor frequency of nucleus
 # The values for 800 MHz NMR
-omega = {'C' :  2 * np.PI() * 201.2058454 * 10**6,
-         'N' : -2 * np.PI() * 81.0596495  * 10**6,
-         'H' :  2 * np.PI() * 799.8737876 * 10**6}
+omega = {'C' :  2 * np.pi * 201.2058454 * 10**6,
+         'N' : -2 * np.pi * 81.0596495  * 10**6,
+         'H' :  2 * np.pi * 799.8737876 * 10**6}
 
 # gyromagnetic ratio of C**13, N**15, H**1
 gamma = {'C':  6.7262 * 10**7,
@@ -194,10 +195,10 @@ rRef = {'CH': 1.109 * 10**(-10),
 
 # relative combined uncertainty of d00
 def d00(ctype, ntype, r):
-    return (1/20) * (MU_o/(4*np.PI()))**2 * (h/(2*np.PI()))**2 * gamma[ctype]**2 * gamma[ntype]**2 * r**(-6)
+    return (1/20) * (MU_o/(4*np.pi))**2 * (h/(2*np.pi))**2 * gamma[ctype]**2 * gamma[ntype]**2 * r**(-6)
 
 def dd00(ctype, ntype, r):
-    return (1/20) * (MU_o/(4*np.PI()))**2 * (h/(2*np.PI()))**2 * gamma[ctype]**2 * gamma[ntype]**2 * 6 * r**(-7) * drXH[ctype]
+    return (1/20) * (MU_o/(4*np.pi))**2 * (h/(2*np.pi))**2 * gamma[ctype]**2 * gamma[ntype]**2 * 6 * r**(-7) * drXH[ctype]
 
 # CSA
 def c00(ntype):
@@ -267,21 +268,21 @@ def toNOE(X, H, A, tauJ):
 
 def prepare_A_and_tauJ(params, tauc):
     # Pre-exponential factors from fit procedure
-    listA = params[:, 0:-1:2]
+    listA = params[0:-1:2]
     nexps = listA.shape[0]
 
     # The first amplitude A[0] is the order parameter
     # Following amplitudes are pre-exponentials from fit procedure
     A = np.zeros(nexps+1)
-    A[0] = params[:, -1] # order parameter
+    A[0] = params[-1] # order parameter
     A[1:] = listA
 
     # The result of nonlinear least squares fitting in molecular frame
-    tauFit = params[:, 1::2]
+    tauFit = params[1::2]
 
     # The first time tauJ[0] is tauc -- overall isotropic rotation time
     # Other times are fitted times corrected for tauc
-    tauJ = np.zeros[nexps+1]
+    tauJ = np.zeros(nexps+1)
     tauJ[0] = tauc
     # Apply tauc to all fitted times tauFit
     # Times are corrected for overall isotropic rotation with time tauc
@@ -299,9 +300,9 @@ def calcRelaxDistrib(dd, tauc, params, covar):
     H = 'H'
     for i in range(numParts):
         j = relGroups[nr][i]
-        print(corFunList[j])
+        #print(corFunList[j])
         # vec(j)
-        distrib(dd, covar)
+        #distrib(dd, covar)
         for m in range(1, dd + 1):
             A, tauJ = prepare_A_and_tauJ(params, tauc)
             # A[0] is order parameter
@@ -311,18 +312,23 @@ def calcRelaxDistrib(dd, tauc, params, covar):
 
 
 def load_data(filename, group, tcf, nexp):
-    fd = h5py.File(filename, 'r')
-    hdf_group = fd[group][tcf]['exp{}'.format(nexp)]
-    params = hdf_group['params'][::]
-    covar  = hdf_group['covar'][::]
-    return params, covar
+    with h5py.File(filename, 'r') as fd:
+        hdf_group = fd[group]
+        if 'names' in hdf_group:
+            hdf_names = hdf_group['names'][()]
+            names = hdf_names.splitlines()
+        hdf_exp = hdf_group['exp{}'.format(nexp)]
+        params = hdf_exp['params'][::]
+        covar  = hdf_exp['covar'][::]
+        return params, covar, names
 
 def main(args):
-    params, covar = load_data(args.filename, args.group, args.tcf, args.nexp)
+    params, covar, names = load_data(args.filename, args.group, args.tcf, args.nexp)
 
     dd=1
     for i in range(params.shape[0]):
-        calcRelaxDistrib(dd, args.tauc, args.exp_start, params[i], covar[i])
+        print("Calculate relaxation for {}".format(names[i]))
+        calcRelaxDistrib(dd, args.tauc, params[i], covar[i])
 
 
 
@@ -330,8 +336,9 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("filename", type=str)
     parser.add_argument('-i', default=0, type=int, help='index in data array for calculation')
-    parser.add_argument('-s', '--exp-start', default=4, type=int, help='Number of exponents to start from')
-    parser.add_argument('-f', '--exp-finish', default=6, type=int, help='Number of exponents when finish')
+    #parser.add_argument('-s', '--exp-start', default=4, type=int, help='Number of exponents to start from')
+    #parser.add_argument('-f', '--exp-finish', default=6, type=int, help='Number of exponents when finish')
+    parser.add_argument('--nexp', default=5, type=int, help='Number of exps to use')
     parser.add_argument('-g', '--group', default='NH', help='Which group you want to calculate')
     parser.add_argument('--tcf', default='acf', help='Need to fit data from hdf')
     parser.add_argument('--tauc', type=float, help='TauC of the molecule in picoseconds')
