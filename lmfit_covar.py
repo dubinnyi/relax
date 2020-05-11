@@ -29,7 +29,7 @@ def one_fit(tuple_of_args):
 
 def one_fit_with_weights_scalecovar(tuple_of_args):
    (dataX, dataY, model, params, weights, scalecovar) = tuple_of_args
-   return model.fit(dataY, params, x=dataX, method='least_squares', scale_covar=scalecovar)
+   return model.fit(dataY, params, x=dataX, weights=weights, method='least_squares', scale_covar=scalecovar)
 
 def random_XY(dataX, AT):
     nruns= AT.shape[0]
@@ -115,7 +115,11 @@ def run_monte_carlo_covar(dataX, A0, T0, sigma, ntry= 16):
     params = exp_model.make_params(A=A0, T=T0)
     weights = np.full(dataX.shape, 1/sigma)
     npars=2
-    redchi=sigma**2*npts/(npts-npars)
+    #true_chisqr = sigma ** 2 * npts
+    true_chisqr = npts
+    true_redchi = true_chisqr/(npts-npars)
+    print("true_chisqr= {:8.4f}".format(true_chisqr))
+    print("true_redchi= {:8.6f}".format(true_redchi))
 
     noise_small= 1e-10
     print("Initial exact fit with weights = 1/sigma and noise = {}".format(noise_small))
@@ -123,33 +127,43 @@ def run_monte_carlo_covar(dataX, A0, T0, sigma, ntry= 16):
     dataY_noise= add_random_noise(dataY, noise_small)
     all_args = (dataX, dataY_noise, exp_model, params, weights, False)
     fit_res= one_fit_with_weights_scalecovar(all_args)
+    res_chisqr = fit_res.chisqr
+    res_redchi = fit_res.redchi
+    print("chisqr ={} redchi= {}".format(res_chisqr, res_redchi))
 
     covar = fit_res.covar
     #best = fit_res.best_values
     #print(" Fit params: A= {:8.6f} T= {:8.6f}".format(best['A'], best['T']))
     #print("True params: A= {:8.6f} T= {:8.6f}".format(A0, T0))
     print("COVAR =\n{}".format(covar))
-    covar_redchi = covar*redchi
-    print("COVAR * redchi = \n{}".format(covar_redchi))
+    covar_redchi = covar*true_redchi
+    #print("COVAR * true_redchi = \n{}".format(covar_redchi))
     param_stat=np.zeros((2,ntry))
+    chisqr_stat=np.zeros((ntry))
+    redchi_stat = np.zeros((ntry))
 
     print()
     print("Monte-Carlo covariance matrix estimation by {} fits ".format(ntry))
     for i in range(ntry):
         dataY_noise = add_random_noise(dataY, sigma)
-        all_args = (dataX, dataY_noise, exp_model, params, weights, True)
+        all_args = (dataX, dataY_noise, exp_model, params, weights, False)
         fit_res = one_fit_with_weights_scalecovar(all_args)
         best = fit_res.best_values
+        chisqr_stat[i] = fit_res.chisqr
+        redchi_stat[i] = fit_res.redchi
         if i==0:
             covar0=fit_res.covar
+            print("chisqr ={:8.4f} redchi= {:8.6f}".format(chisqr_stat[i], redchi_stat[i]))
             print("real noise COVAR =\n{}".format(covar0))
         param_stat[0, i] = best['A'] - A0
         param_stat[1, i] = best['T'] - T0
     print("Monte carlo finished")
+    print("chisqr = {:8.4f}+/-{:8.4f}".format(np.mean(chisqr_stat), np.std(chisqr_stat)))
+    print("redchi = {:8.6f}+/-{:8.6f}".format(np.mean(redchi_stat), np.std(redchi_stat)))
     mc_covar = np.cov(param_stat)
     print("MC_COVAR=\n{}".format(mc_covar))
 
-    print("MC_COVAR/(COVAR*redchi) = \n{}".format(mc_covar/covar_redchi))
+    print("MC_COVAR/COVAR = \n{}".format(mc_covar/covar))
 
     return covar, mc_covar
 
