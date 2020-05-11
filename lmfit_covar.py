@@ -27,9 +27,9 @@ def one_fit(tuple_of_args):
    (dataX, dataY, model, params) = tuple_of_args
    return model.fit(dataY, params, x=dataX, method='least_squares', scale_covar=False)
 
-def one_fit_with_weights(tuple_of_args):
-   (dataX, dataY, model, params, weights) = tuple_of_args
-   return model.fit(dataY, params, x=dataX, method='least_squares', scale_covar=False)
+def one_fit_with_weights_scalecovar(tuple_of_args):
+   (dataX, dataY, model, params, weights, scalecovar) = tuple_of_args
+   return model.fit(dataY, params, x=dataX, method='least_squares', scale_covar=scalecovar)
 
 def random_XY(dataX, AT):
     nruns= AT.shape[0]
@@ -109,38 +109,47 @@ def run_monte_carlo_covar(dataX, A0, T0, sigma, ntry= 16):
     print()
     print("Run monte-carlo covariance matrix estimation")
     print("A0={}, T0={}, sigma={}, ntry={}".format(A0,T0,sigma,ntry))
+    npts=dataX.shape[0]
     dataY= exp_one(dataX, A0, T0)
     exp_model = lmfit.Model(exp_one)
     params = exp_model.make_params(A=A0, T=T0)
     weights = np.full(dataX.shape, 1/sigma)
+    npars=2
+    redchi=sigma**2*npts/(npts-npars)
 
     noise_small= 1e-10
     print("Initial exact fit with weights = 1/sigma and noise = {}".format(noise_small))
 
     dataY_noise= add_random_noise(dataY, noise_small)
-    all_args = (dataX, dataY_noise, exp_model, params, weights)
-    fit_res= one_fit_with_weights(all_args)
-    best = fit_res.best_values
+    all_args = (dataX, dataY_noise, exp_model, params, weights, False)
+    fit_res= one_fit_with_weights_scalecovar(all_args)
+
     covar = fit_res.covar
-    print(" Fit params: A= {:8.6f} T= {:8.6f}".format(best['A'], best['T']))
-    print("True params: A= {:8.6f} T= {:8.6f}".format(A0, T0))
+    #best = fit_res.best_values
+    #print(" Fit params: A= {:8.6f} T= {:8.6f}".format(best['A'], best['T']))
+    #print("True params: A= {:8.6f} T= {:8.6f}".format(A0, T0))
     print("COVAR =\n{}".format(covar))
+    covar_redchi = covar*redchi
+    print("COVAR * redchi = \n{}".format(covar_redchi))
     param_stat=np.zeros((2,ntry))
 
     print()
     print("Monte-Carlo covariance matrix estimation by {} fits ".format(ntry))
     for i in range(ntry):
         dataY_noise = add_random_noise(dataY, sigma)
-        all_args = (dataX, dataY_noise, exp_model, params, weights)
-        fit_res = one_fit_with_weights(all_args)
+        all_args = (dataX, dataY_noise, exp_model, params, weights, True)
+        fit_res = one_fit_with_weights_scalecovar(all_args)
         best = fit_res.best_values
+        if i==0:
+            covar0=fit_res.covar
+            print("real noise COVAR =\n{}".format(covar0))
         param_stat[0, i] = best['A'] - A0
         param_stat[1, i] = best['T'] - T0
     print("Monte carlo finished")
     mc_covar = np.cov(param_stat)
     print("MC_COVAR=\n{}".format(mc_covar))
 
-    print("1e6*MC_COVAR/COVAR = \n{}".format(1e6*mc_covar/covar))
+    print("MC_COVAR/(COVAR*redchi) = \n{}".format(mc_covar/covar_redchi))
 
     return covar, mc_covar
 
@@ -176,9 +185,19 @@ if __name__ == '__main__':
 
     #respar= run_fits_parallel(dataX, rdata, rAT, exp_model, exp_params, nruns_par)
 
-    res_covar1 = run_monte_carlo_covar(dataX, 0.5, 0.5, 0.01, 1024)
-    res_covar2 = run_monte_carlo_covar(dataX, 0.5, 0.5, 0.02, 1024)
-    res_covar3 = run_monte_carlo_covar(dataX, 0.5, 0.5, 0.03, 1024)
+    print("==================================")
+    print("tests with npts={}".format(npts))
+    res_covar1 = run_monte_carlo_covar(dataX, 0.5, 0.5, 0.001, 1024)
+    res_covar2 = run_monte_carlo_covar(dataX, 0.5, 0.5, 0.005, 1024)
+    res_covar3 = run_monte_carlo_covar(dataX, 0.5, 0.5, 0.01, 1024)
+
+    print("==================================")
+    npts = 1024
+    print("tests with npts={}".format(npts))
+    dataX = np.linspace(npts, 1, npts)
+    res_covar4 = run_monte_carlo_covar(dataX, 0.5, 0.5, 0.001, 1024)
+    res_covar5 = run_monte_carlo_covar(dataX, 0.5, 0.5, 0.005, 1024)
+    res_covar6 = run_monte_carlo_covar(dataX, 0.5, 0.5, 0.01, 1024)
 
 
 
