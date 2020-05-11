@@ -5,144 +5,7 @@ import h5py
 import numpy as np
 
 from argparse import ArgumentParser
-# #########################
-# LOAD DATA
-# #########################
 
-dataFit = []
-# corFunList = dataFit
-corFunList = [[1, 'GLU', 2, 'N', 'HN', 'NH', 1],
-              [2, 'CYS2', 3, 'N', 'HN', 'NH', 2],
-              [3, 'HIS', 4, 'N', 'HN', 'NH', 3],
-              [4, 'ASN', 5, 'N', 'HN', 'NH', 4],
-              [5, 'GLN', 6, 'N', 'HN', 'NH', 5],
-              [6, 'GLN', 7, 'N', 'HN', 'NH', 6],
-              [7, 'SER', 8, 'N', 'HN', 'NH', 7],
-              [8, 'SER', 9, 'N', 'HN', 'NH', 8],
-              [9, 'GLN', 10, 'N', 'HN', 'NH', 9],
-              [10, 'THR', 13, 'N', 'HN', 'NH', 10],
-              [11, 'THR', 14, 'N', 'HN', 'NH', 11],
-              [12, 'LYS', 15, 'N', 'HN', 'NH', 12],
-              [13, 'THR', 16, 'N', 'HN', 'NH', 13],
-              [14, 'CYS2', 17, 'N', 'HN', 'NH', 14],
-              [15, 'SER', 18, 'N', 'HN', 'NH', 15],
-              [16, 'GLY', 19, 'N', 'HN', 'NH', 16],
-              [17, 'GLU', 20, 'N', 'HN', 'NH', 17],
-              [18, 'THR', 21, 'N', 'HN', 'NH', 18],
-              [19, 'ASN', 22, 'N', 'HN', 'NH', 19],
-              [20, 'CYS2', 23, 'N', 'HN', 'NH', 20],
-              [21, 'TYR', 24, 'N', 'HN', 'NH', 21],
-              [22, 'LYS', 25, 'N', 'HN', 'NH', 22],
-              [23, 'LYS', 26, 'N', 'HN', 'NH', 23],
-              [24, 'TRP', 27, 'N', 'HN', 'NH', 24],
-              [25, 'TRP', 28, 'N', 'HN', 'NH', 25],
-              [26, 'SER', 29, 'N', 'HN', 'NH', 26],
-              [27, 'ASP', 30, 'N', 'HN', 'NH', 27],
-              [28, 'HIS', 31, 'N', 'HN', 'NH', 28],
-              [29, 'ARG', 32, 'N', 'HN', 'NH', 29],
-              [30, 'ARG', 32, 'NE', 'HE', 'NH', 30],
-              [31, 'GLY', 33, 'N', 'HN', 'NH', 31],
-              [32, 'THR', 34, 'N', 'HN', 'NH', 32],
-              [33, 'ILE', 35, 'N', 'HN', 'NH', 33],
-              [34, 'ILE', 36, 'N', 'HN', 'NH', 34],
-              [35, 'GLU', 37, 'N', 'HN', 'NH', 35],
-              [36, 'ARG', 38, 'N', 'HN', 'NH', 36],
-              [37, 'ARG', 38, 'NE', 'HE', 'NH', 37],
-              [38, 'GLY', 39, 'N', 'HN', 'NH', 38],
-              [39, 'CYS2', 40, 'N', 'HN', 'NH', 39],
-              [40, 'GLY', 41, 'N', 'HN', 'NH', 40],
-              [41, 'CYS2', 42, 'N', 'HN', 'NH', 41],
-              [42, 'LYS', 44, 'N', 'HN', 'NH', 42],
-              [43, 'VAL', 45, 'N', 'HN', 'NH', 43],
-              [44, 'LYS', 46, 'N', 'HN', 'NH', 44],
-              [45, 'GLY', 48, 'N', 'HN', 'NH', 45],
-              [46, 'VAL', 49, 'N', 'HN', 'NH', 46],
-              [47, 'ASN', 50, 'N', 'HN', 'NH', 47],
-              [48, 'LEU', 51, 'N', 'HN', 'NH', 48],
-              [49, 'ASN', 52, 'N', 'HN', 'NH', 49],
-              [50, 'CYS2', 53, 'N', 'HN', 'NH', 50],
-              [51, 'CYS2', 54, 'N', 'HN', 'NH', 51],
-              [52, 'ARG', 55, 'N', 'HN', 'NH', 52],
-              [53, 'ARG', 55, 'NE', 'HE', 'NH', 53],
-              [54, 'THR', 56, 'N', 'HN', 'NH', 54],
-              [55, 'ASP', 57, 'N', 'HN', 'NH', 55],
-              [56, 'ARG', 58, 'N', 'HN', 'NH', 56],
-              [57, 'ARG', 58, 'NE', 'HE', 'NH', 57],
-              [58, 'CYS2', 59, 'N', 'HN', 'NH', 58],
-              [59, 'ASN', 60, 'N', 'HN', 'NH', 59],
-              [60, 'ASN', 61, 'N', 'HN', 'NH', 60]]
-
-# gatheredFits=Gather[corFunList]
-gatheredFits = [[1, 'GLU', 2, 'N', 'HN', 'NH', 1],
-                [2, 'CYS2', 3, 'N', 'HN', 'NH', 2],
-                [3, 'HIS', 4, 'N', 'HN', 'NH', 3],
-                [4, 'ASN', 5, 'N', 'HN', 'NH', 4],
-                [5, 'GLN', 6, 'N', 'HN', 'NH', 5],
-                [6, 'GLN', 7, 'N', 'HN', 'NH', 6],
-                [7, 'SER', 8, 'N', 'HN', 'NH', 7],
-                [8, 'SER', 9, 'N', 'HN', 'NH', 8],
-                [9, 'GLN', 10, 'N', 'HN', 'NH', 9],
-                [10, 'THR', 13, 'N', 'HN', 'NH', 10],
-                [11, 'THR', 14, 'N', 'HN', 'NH', 11],
-                [12, 'LYS', 15, 'N', 'HN', 'NH', 12],
-                [13, 'THR', 16, 'N', 'HN', 'NH', 13],
-                [14, 'CYS2', 17, 'N', 'HN', 'NH', 14],
-                [15, 'SER', 18, 'N', 'HN', 'NH', 15],
-                [16, 'GLY', 19, 'N', 'HN', 'NH', 16],
-                [17, 'GLU', 20, 'N', 'HN', 'NH', 17],
-                [18, 'THR', 21, 'N', 'HN', 'NH', 18],
-                [19, 'ASN', 22, 'N', 'HN', 'NH', 19],
-                [20, 'CYS2', 23, 'N', 'HN', 'NH', 20],
-                [21, 'TYR', 24, 'N', 'HN', 'NH', 21],
-                [22, 'LYS', 25, 'N', 'HN', 'NH', 22],
-                [23, 'LYS', 26, 'N', 'HN', 'NH', 23],
-                [24, 'TRP', 27, 'N', 'HN', 'NH', 24],
-                [25, 'TRP', 28, 'N', 'HN', 'NH', 25],
-                [26, 'SER', 29, 'N', 'HN', 'NH', 26],
-                [27, 'ASP', 30, 'N', 'HN', 'NH', 27],
-                [28, 'HIS', 31, 'N', 'HN', 'NH', 28],
-                [29, 'ARG', 32, 'N', 'HN', 'NH', 29],
-                [30, 'ARG', 32, 'NE', 'HE', 'NH', 30],
-                [31, 'GLY', 33, 'N', 'HN', 'NH', 31],
-                [32, 'THR', 34, 'N', 'HN', 'NH', 32],
-                [33, 'ILE', 35, 'N', 'HN', 'NH', 33],
-                [34, 'ILE', 36, 'N', 'HN', 'NH', 34],
-                [35, 'GLU', 37, 'N', 'HN', 'NH', 35],
-                [36, 'ARG', 38, 'N', 'HN', 'NH', 36],
-                [37, 'ARG', 38, 'NE', 'HE', 'NH', 37],
-                [38, 'GLY', 39, 'N', 'HN', 'NH', 38],
-                [39, 'CYS2', 40, 'N', 'HN', 'NH', 39],
-                [40, 'GLY', 41, 'N', 'HN', 'NH', 40],
-                [41, 'CYS2', 42, 'N', 'HN', 'NH', 41],
-                [42, 'LYS', 44, 'N', 'HN', 'NH', 42],
-                [43, 'VAL', 45, 'N', 'HN', 'NH', 43],
-                [44, 'LYS', 46, 'N', 'HN', 'NH', 44],
-                [45, 'GLY', 48, 'N', 'HN', 'NH', 45],
-                [46, 'VAL', 49, 'N', 'HN', 'NH', 46],
-                [47, 'ASN', 50, 'N', 'HN', 'NH', 47],
-                [48, 'LEU', 51, 'N', 'HN', 'NH', 48],
-                [49, 'ASN', 52, 'N', 'HN', 'NH', 49],
-                [50, 'CYS2', 53, 'N', 'HN', 'NH', 50],
-                [51, 'CYS2', 54, 'N', 'HN', 'NH', 51],
-                [52, 'ARG', 55, 'N', 'HN', 'NH', 52],
-                [53, 'ARG', 55, 'NE', 'HE', 'NH', 53],
-                [54, 'THR', 56, 'N', 'HN', 'NH', 54],
-                [55, 'ASP', 57, 'N', 'HN', 'NH', 55],
-                [56, 'ARG', 58, 'N', 'HN', 'NH', 56],
-                [57, 'ARG', 58, 'NE', 'HE', 'NH', 57],
-                [58, 'CYS2', 59, 'N', 'HN', 'NH', 58],
-                [59, 'ASN', 60, 'N', 'HN', 'NH', 59],
-                [60, 'ASN', 61, 'N', 'HN', 'NH', 60]]
-
-numRelGroups = len(gatheredFits)
-
-# relGroups=Table[Position[corFunList[All, 1], i]//Flatten, [i, Range@numRelGroups]
-relGroups = [[1],  [2],  [3],  [4],  [5],  [6],  [7],  [8],  [9],  [10],
-             [11], [12], [13], [14], [15], [16], [17], [18], [19], [20],
-             [21], [22], [23], [24], [25], [26], [27], [28], [29], [30],
-             [31], [32], [33], [34], [35], [36], [37], [38], [39], [40],
-             [41], [42], [43], [44], [45], [46], [47], [48], [49], [50],
-             [51], [52], [53], [54], [55], [56], [57], [58], [59], [60]]
 
 # not used
 newTauC = 2974.0
@@ -299,7 +162,7 @@ def calcRelaxDistrib(dd, tauc, params, covar):
     X = 'N'
     H = 'H'
     for i in range(numParts):
-        j = relGroups[nr][i]
+        #j = relGroups[nr][i]
         #print(corFunList[j])
         # vec(j)
         #distrib(dd, covar)
@@ -317,6 +180,8 @@ def load_data(filename, group, tcf, nexp):
         if 'names' in hdf_group:
             hdf_names = hdf_group['names'][()]
             names = hdf_names.splitlines()
+        else:
+            names=''
         hdf_exp = hdf_group['exp{}'.format(nexp)]
         params = hdf_exp['params'][::]
         covar  = hdf_exp['covar'][::]
