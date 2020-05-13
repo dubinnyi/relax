@@ -67,10 +67,11 @@ def run_one_fit(dataX, rdataY, weights, rAT, model, params):
           format(finish - start, 1/(finish - start)))
     print(res.fit_report())
     print("Compariosion with TRUE values")
-    print("{:>10} {:13} {:13}".format("Name","Fit","True"))
+    print("{:>10} {:13} {:13} {:13} {:13}".format("Name","Fit","True", "True-Fit", "Fit error"))
     ipar= 0
     for par_name, par_fit in res.best_values.items():
-        print("{:>10} {:13.10f} {:13.10f}".format(par_name, par_fit, rAT[ipar]))
+        print("{:>10} {:13.10f} {:13.10f} {:13.10f} {:13.10f}".
+              format(par_name, par_fit, rAT[ipar], rAT[ipar] - par_fit, res.params[par_name].stderr))
         ipar += 1
     print("Covariance matrix:")
     print(res.covar)
@@ -265,7 +266,7 @@ if __name__ == '__main__':
         res1 = run_one_fit(dataX, rdata[irun], weights, rAT[irun], exp_model, exp_params)
         rAT2[0, 0] = rAT[0, 0] # A1 = A
         rAT2[0, 1] = rAT[0, 1] # T1 = T
-        rAT2[0, 2:] =0         # A2, T2, c = 0
+        rAT2[0, 2:] = 0        # A2, T2, c = 0
         res21 = run_one_fit(dataX, rdata[irun], weights, rAT2[irun], exp_two_model, exp_two_params)
 
     if args.fit_sequencially:
