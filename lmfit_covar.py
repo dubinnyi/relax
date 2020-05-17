@@ -13,6 +13,23 @@ def exp_one(x, A, T):
     return A * np.exp(-x/T)
 
 
+def exp_one_c(x, A, T, c):
+    return A * np.exp(-x/T) + c
+
+
+def exp_one_c_model_params():
+    model = lmfit.Model(exp_one_c)
+    model.set_param_hint('c', value=1.0)
+    model.set_param_hint('A', value=1.0, min=0)
+    model.set_param_hint('T', value=1.0, min=0)
+    cntrl_expr = 'A + c'
+    params = model.make_params()
+    params.add('cntrl', value=1, min=1 - 1e-5, max=1 + 1e-5)
+    params['cntrl'].vary = True
+    params['cntrl'].expr = cntrl_expr
+    return model, params
+
+
 def exp_two_c(x, A1, T1, A2, T2, c):
     return A1 * np.exp(-x/T1) + A2 * np.exp(-x/T2) + c
 
@@ -32,9 +49,10 @@ def add_random_noise(dataY, sigma):
     return dataY + np.random.normal(0, sigma, dataY.shape[0])
 
 
-def exp_one_data(dataX, at, sigma):
+def exp_one_data(dataX, at, sigma, model_func=exp_one):
     npts = dataX.shape[0]
-    dataY = exp_one(dataX, at[0], at[1])
+    model_args = tuple(at)
+    dataY = model_func(dataX, *model_args)
     dataY+= np.random.normal(0.0, sigma, npts)
     return dataY
 
@@ -49,11 +67,11 @@ def one_fit_with_weights_scalecovar(tuple_of_args):
    return model.fit(dataY, params, x=dataX, weights=weights, method='least_squares', scale_covar=scalecovar)
 
 
-def random_XY(dataX, AT, sigma):
+def random_XY(dataX, AT, sigma, model_func=exp_one):
     nruns= AT.shape[0]
     rdata= np.empty([nruns, npts])
     for i, at in zip(range(nruns),AT):
-      rdata[i]= exp_one_data(dataX, at, sigma)
+      rdata[i]= exp_one_data(dataX, at, sigma, model_func)
     return rdata
 
 
@@ -228,6 +246,7 @@ if __name__ == '__main__':
     parser.add_argument('--fit-sequencially', action='store_true', help='Run multiple fits sequencially')
     parser.add_argument('--fit-parallel', action='store_true', help='Run multiple fits sequencially')
     parser.add_argument('--covar', action='store_true', help='Estimate covariance matrix from monte-carlo')
+    parser.add_argument('--exp-one-c', action='store_true', help='Fit A* exp(-t/T) + c with constraint A + c == 1')
     args = parser.parse_args()
 
     npts = 128
@@ -250,7 +269,9 @@ if __name__ == '__main__':
     exp_params = exp_model.make_params(A=0.5, T=0.5)
     exp_two_params = exp_two_model.make_params(A1=0.25, T1=0.2, A2=0.25, T2=0.8, c=0)
     print("Generate random A and T values (rAT) of size {}".format(nruns))
-    rAT=random_AT(nruns, npars)
+    rAT=random_AT(nruns, 2)
+    rATc=random_AT(nruns, 3)
+    rATc[:,2] = - rATc[:,0] + 1
     rAT2 = random_AT(nruns, npars2)
     print("Generate random_XY of size {}".format(rAT.shape[0]))
     rdata = random_XY(dataX, rAT, sigma)
@@ -260,6 +281,25 @@ if __name__ == '__main__':
     if args.one_fit:
         irun=0
         res0 = run_one_fit(dataX, rdata[irun], weights, rAT[irun], exp_model, exp_params)
+
+    if args.exp_one_c:
+        irun = 0
+        rdata1c = random_XY(dataX, rATc, sigma, exp_one_c)
+        e1c_model, e1c_params = exp_one_c_model_params()
+        res0 = run_one_fit(dataX, rdata1c[irun], weights, rATc[irun], e1c_model, e1c_params)
+        covar = res0.covar
+        proj = np.array([[1, 0, -1], [1, 0, 0]])
+        pcovar = proj.dot(covar).dot(proj.transpose())
+        print("Projected covariance matrix")
+        print(pcovar)
+        ipar = 0
+        perrs=np.sqrt(np.diagonal(pcovar))
+        for par_name, par_fit in res0.best_values.items():
+            print("{:>10} {:13.10f} +/- {:13.10f} ({:5.2f}%)".
+                  format(par_name, par_fit, perrs[ipar], perrs[ipar]/par_fit*100))
+            ipar += 1
+            if ipar>=2:
+                break
 
     if args.fit_1to2:
         irun=0
