@@ -50,7 +50,16 @@ class FitResult():
 
     @param_vals.setter
     def param_vals(self, param_vals):
-        self._param_vals = param_vals()
+        self._param_vals = param_vals
+
+    @property
+    def param_names(self):
+        return self._param_names
+
+
+    @param_names.setter
+    def param_names(self, param_names):
+        self._param_names = param_names
 
     @property
     def covar(self):

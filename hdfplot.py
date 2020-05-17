@@ -28,37 +28,48 @@ import matplotlib.pyplot as plt
 
 from argparse import ArgumentParser
 
+class HdfPlotError(Exception):
+    """docstring for HdfPlotError"""
+    def __init__(self, msg):
+        super(HdfPlotError, self).__init__()
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+
+
 def param_autodetect(param):
-    evenlist= param[0::2]
-    oddlist= param[1::2]
-    type = None
+    evenlist = param[0::2]
+    oddlist = param[1::2]
+    tcf_type = None
     print("evenlist {}".format(evenlist.shape))
     print("oddlist {}".format(oddlist.shape))
-    if max(oddlist)>max(evenlist):
+    if max(oddlist) > max(evenlist):
         # hint for swapped time/amplitude
         # acf, time in even indexes, free coeff is last
-        type = 'acf'
+        tcf_type = 'acf'
         print("expall acf")
-        tau= oddlist
-        ampl= evenlist[:-1]
-        coeff= evenlist[-1]
+        tau = oddlist
+        ampl = evenlist[:-1]
+        coeff = evenlist[-1]
         print("tau {}".format(tau.shape))
         print("ampl {}".format(ampl.shape))
     else:
         # hint for swapped time/amplitude
         # ccf, time in odd indexes, free coeff is last
-        type = 'ccf'
+        tcf_type = 'ccf'
         print("expall ccf")
-        tau= evenlist[:-1]
-        ampl= oddlist
-        coeff= evenlist[-1]
+        tau = evenlist[:-1]
+        ampl = oddlist
+        coeff = evenlist[-1]
         print("tau {}".format(tau.shape))
         print("ampl {}".format(ampl.shape))
     return tau, ampl, coeff, type
 
-def expall(param,arrtime):
-    tau, ampl, coeff, type = param_autodetect(param)
-    out=np.copy(coeff)
+
+def expall(param, arrtime):
+    tau, ampl, coeff, tcf_type = param_autodetect(param)
+    out = np.copy(coeff)
     for i in range(tau.shape[0]):
         out = out + ampl[i]*np.exp(arrtime/(-tau[i]))
     return out
@@ -66,19 +77,25 @@ def expall(param,arrtime):
 
 def main(args):
     parser = ArgumentParser()
-    parser.add_argument("-d", '--data-file', type=str)
-    parser.add_argument("-f", '--fit-file', type=str)
-    parser.add_argument('-g', '--group', default='NH', help='Which group you want to fit. Need to fit data from hdf')
-    parser.add_argument('--tcf', default='acf', help='Need to fit data from hdf')
+    parser.add_argument("-d", '--data-file', required=True, type=str, help='file which content original data')
+    parser.add_argument("-f", '--fit-file', required=True, type=str, help='file which content fit result')
+    parser.add_argument('-g', '--group', default='NH', help='Which group you want to plot')
+    parser.add_argument('--tcf', default='acf', help='Type of correlation function. Can be *acf* or *ccf*')
     parser.add_argument('--timelines', action='store_true', help='Shoe grid line for each time value')
     parser.add_argument('--chisqr', action='store_true', help='Shoe grid line for each time value')
     parser.add_argument('--exp-start', default=4, type=int, help='Number of exponents to start from')
     parser.add_argument('--exp-finish', default=6, type=int, help='Number of exponents when finish')
+    parser.add_argument('--istart', default=0, type=int, help='index to start plot from')
+    parser.add_argument('--ifinish', default=float('inf'), type=int, help='index to finish plot at')
     args = parser.parse_args()
 
     with h5py.File(args.data_file, 'r') as fd:
         time = fd['time'][:]
         print("Time line: {} ({}..{} ps)".format(time.shape, time[0], time[-1]))
+        if not args.group in fd.keys():
+            raise HdfPlotError("Group {} not found in file {}".format(args.group, args.fit_file))
+        elif not args.tcf in fd[args.group].keys():
+            raise HdfPlotError("Tcf {} not found in file {}".format(args.tcf, args.fit_file))
         mean = fd[args.group][args.tcf]['mean'][:]
         errs = fd[args.group][args.tcf]['errs'][:]
         #print("Data shape: {}".format(mean.shape))
@@ -88,8 +105,7 @@ def main(args):
     with h5py.File(args.fit_file, 'r') as fd:
         group_list = [g for g in fd]
         if not args.group in group_list:
-            print("Group {} not found in file {}".format(args.group, args.fit_file), sys.stderr)
-            return None
+            raise HdfPlotError("Group {} not found in file {}".format(args.group, args.fit_file))
         item_list = [item for item in fd[args.group]]
         if args.tcf in item_list:
             fd_exps = fd[args.group][args.tcf]
@@ -100,21 +116,20 @@ def main(args):
         exps_args = ['exp{}'.format(e) for e in exps_range]
         exps_infile = [exp for exp in fd_exps if exp in exps_args]
         if not exps_infile:
-            print("Exponents '{}' not found in {}/{}".format(" ".join(exps_args),
-                                args.fit_file, args.group), sys.stderr)
-            return None
+            raise HdfPlotError("Exponents '{}' not found in {}/{}".format(" ".join(exps_args),
+                                                             args.fit_file, args.group))
         print("exps in file: {}".format(exps_infile))
         params = {}
         stats = {}
         taus = {}
         for exp in exps_infile:
-            params[exp]= fd_exps[exp]['params'][:]
+            params[exp] = fd_exps[exp]['params'][:]
             stats[exp] = fd_exps[exp]['stats'][:]
-            auto_pars = param_autodetect(params[exp][0,:])
+            auto_pars = param_autodetect(params[exp][0, :])
             if auto_pars[-1] == 'acf':
-                taus[exp]= params[exp][:,1::2]
+                taus[exp] = params[exp][:, 1::2]
             else:
-                taus[exp]= params[exp][:,0:-1:2]
+                taus[exp] = params[exp][:, 0:-1:2]
             # print("params[{}].shape: {}".format(exp, params[exp].shape))
             # print("stats[{}].shape: {}".format(exp, stats[exp].shape))
         # exp4=np.array(fd.get('{}/exp4/params'.format(args.group)))
@@ -134,8 +149,9 @@ def main(args):
     # print("exp4.shape={}".format(exp4.shape))
     # print("tau4.shape={}".format(tau4.shape))
 
-
-    for res in range(mean.shape[0]):
+    start = max(0, args.istart)
+    finish = min(mean.shape[0], args.ifinish)
+    for res in range(start, finish):
         labels = {}
         for exp in exps_infile:
             if args.chisqr:
@@ -153,24 +169,24 @@ def main(args):
         #     (label4, label5, label6) = ('4 exps', '5 exps', '6 exps')
         print("labels: {}".format(labels))
 
-        fig,ax=plt.subplots(1,2, figsize=(10,5))
+        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
         fig.suptitle(names[res])
-        ax[0].errorbar((time+1)[:7],mean[res,:7],
-                       yerr=errs[res,:7], fmt=' ',zorder=0, color='darkgrey')
-        for xsel in (slice(7,100, None), slice(100, 1000,5),slice(1000,2000,10),
+        ax[0].errorbar((time+1)[:7], mean[res, :7],
+                       yerr=errs[res, :7], fmt=' ', zorder=0, color='darkgrey')
+        for xsel in (slice(7, 100, None), slice(100, 1000, 5), slice(1000, 2000, 10),
                      slice(2000, 4000, 50), slice(4000, 8000, 200),
-                     slice(8000,None,1000)):
-            ax[0].errorbar((time+1)[xsel],mean[res,xsel],
-                           yerr=errs[res,xsel], fmt=' ',zorder=0, color='C0')
+                     slice(8000, None, 1000)):
+            ax[0].errorbar((time+1)[xsel], mean[res, xsel],
+                           yerr=errs[res, xsel], fmt=' ', zorder=0, color='C0')
         ax[0].set_xscale('log')
 
         line_styles_list = ['dashdot', 'dashed', 'dotted']
-        colors, styles, c= {}, {}, 0
+        colors, styles, c = {}, {}, 0
         for exp in exps_infile:
             colors[exp] = 'C{}'.format(c+1)
             styles[exp] = line_styles_list[c % len(line_styles_list)]
             c += 1
-            if max(params[exp][res,:])>0:
+            if max(params[exp][res, :]) > 0:
                 ax[0].plot(time + 1, expall(params[exp][res], time),
                            label=labels[exp], zorder=10, color=colors[exp])
         # for expdata, explabel, col in zip((exp4, exp5, exp6),
@@ -196,18 +212,18 @@ def main(args):
         ax[0].legend()
 
 
-        ax[1].errorbar(time[1:7]+1, mean[res,1:7],
-                       yerr=errs[res,1:7], fmt=' ',zorder=0, color='darkgrey')
-        ax[1].errorbar(time[7:ntime]+1,mean[res,7:ntime],
-                       yerr=errs[res,7:ntime],fmt=' ',zorder=0)
+        ax[1].errorbar(time[1:7]+1, mean[res, 1:7],
+                       yerr=errs[res, 1:7], fmt=' ', zorder=0, color='darkgrey')
+        ax[1].errorbar(time[7:ntime]+1, mean[res, 7:ntime],
+                       yerr=errs[res, 7:ntime], fmt=' ', zorder=0)
         ax[1].set_xscale('log')
-        ylim=ax[1].get_ylim()
+        ylim = ax[1].get_ylim()
         for exp in exps_infile:
         # for expdata, explabel, col  in zip((exp4, exp5, exp6),
         #                                    (label4, label5, label6), ('C1', 'C2', 'C3')):
-            if(max(params[exp][res,:])>0):
+            if max(params[exp][res, :]) > 0:
                 ax[1].plot((time[1:ntime]+1),
-                           expall(params[exp][res,:ntime],
+                           expall(params[exp][res, :ntime],
                                   time[:ntime])[1:],
                            label=labels[exp], zorder=10, color=colors[exp])
         ax[1].set_ylim(ylim)
@@ -219,4 +235,8 @@ def main(args):
 
 if __name__ == '__main__':
     import sys
-    sys.exit(main(sys.argv))
+    try:
+        sys.exit(main(sys.argv))
+    except HdfPlotError as e:
+        print(e, file=sys.stderr)
+        exit(-1)

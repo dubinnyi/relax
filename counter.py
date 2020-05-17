@@ -18,6 +18,7 @@ class Counter:
         self.cgroup = None
         self.ctcf = None
         self.cmethod = None
+        self.overalltime = None
 
     ## Adders
     def add_fitInfo(self, fitInfo_series=None, expCount=None, successRate=None, time=None):
@@ -48,6 +49,9 @@ class Counter:
     def set_curN(self, N):
         self.cN = N
 
+    def set_overalltime(self, overalltime):
+        self.overalltime = overalltime
+
     def clean(self):
         pass
 
@@ -70,6 +74,8 @@ class Counter:
                 allTime = self.data[(self.data['exponent count'] == exp) & (self.data['group'] == group)]['fit time'].sum()
             else:
                 allTime = self.data[(self.data['group'] == group)]['fit time'].sum()
+        elif self.overalltime:
+            allTime = self.overalltime
         else:
             allTime = self.data['fit time'].sum()
 

@@ -78,6 +78,13 @@ class CModel(Model):
         else:
             return True
 
+    def check_errors(self):
+        for ivar, name in enumerate(self.res.var_names):
+            par = self.res.params[name]
+            if par.stderr / par.value > 1:
+                return False
+        return True
+
     def report(self):
         return self.res.fit_report(), self.res.covar
 

@@ -5,11 +5,9 @@ import copy
 from threadpoolctl import threadpool_limits
 
 import numpy as np
-import lmfit as lm
 import utils as u
 
 from fitter.fitting import Fitter
-from fitter.exp_model import CModel
 from counter import Counter
 
 from argparse import ArgumentParser
@@ -74,7 +72,7 @@ def pool_fit_one(args):
     time = args['time']
     i = args['idx']
     fitMod.logger = counter.add_fitInfo
-    
+
     counter.set_curN(names)
     name_string = "{:10} {:25}".format(group, names)
     bestRes = fitMod.fit(data, errs, time, method=args['method'], name_string = name_string)
@@ -101,6 +99,7 @@ def main():
     fid = h5py.File(args.output, 'w')
     counter = Counter()
 
+    start=time.monotonic()
     for group in args.group:
         fitMod = Fitter(minexp=args.exp_start, maxexp=args.exp_finish,
                         ntry=args.ntry, tcf_type=args.tcf)
@@ -174,7 +173,8 @@ def main():
 
             print("{}: DONE".format(name_string))
 
-
+    finish = time.monotonic()
+    counter.set_overalltime(finish-start)
     counter.save('fitStatistic.csv')
     print(counter)
     # fitMod.save_toFile('out')

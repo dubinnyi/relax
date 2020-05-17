@@ -6,7 +6,8 @@ from h5py import File, Group
 
 
 class hdfError(Exception):
-    def __init__(self, msg):
+    def __init__(self, msg, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.msg = msg
 
     def __str__(self):
@@ -17,6 +18,9 @@ class hdfAPI(File):
     """docstring for Hdf_API"""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.trj_list = []
+        self.tcf_list = []
+        self.grp_list = []
 
     ### Iterators
 
@@ -64,8 +68,7 @@ class hdfAPI(File):
         elif 'time' in item['acf'].keys():
             return np.array(item['acf']['time'])
         else:
-            print("ERROR!! \'time\' or \'t\' array is not found not in {}".format(item))
-            return None
+            raise hdfError("ERROR!! \'time\' or \'t\' array is not found not in {}".format(item))
 
     def get_timestep(self):
         timeline = self.get_time()
@@ -123,8 +126,7 @@ class hdfAPI(File):
         if gname in trj[tcf].keys():
             return trj[tcf][gname]
 
-        print("ERROR!! {} not in {}".format(gname, tcf))
-        return None
+        raise hdfError("ERROR!! {} not in {}".format(gname, tcf))
 
     def _get_zeroTrj(self):
         return list(self['/'].values())[0]
@@ -180,7 +182,7 @@ class hdfAPI(File):
                             raise hdfError("ERROR!! smarts are not equal")
                 return True
         except hdfError as e:
-            print(e)
+            print(e, file=sys.stderr)
             return False
         except Exception as e:
             raise e

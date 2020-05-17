@@ -30,8 +30,8 @@ def load_data(args, group):
     elif args.type == 'csv':
         data = np.loadtxt(args.filename, delimiter=',')
         time = data[:, 0]
-        func = [ data[:, 1] ]
-        errs = [ np.sqrt(data[:, 2]) ]
+        func = [data[:, 1]]
+        errs = [np.sqrt(data[:, 2])]
         names = [args.filename]
         # ОЧЕНЬ ВАЖНО!!
         errs[0] = errs[1]
@@ -81,6 +81,7 @@ def main():
     counter.set_curTcf(args.tcf)
     fid = h5py.File(args.output, 'w')
 
+    start=time.monotonic()
     for group in args.group:
         counter.set_curGroup(group)
         try:
@@ -98,6 +99,7 @@ def main():
         exps = []
         for i in fitMod.exp_iter():
             cexp = tcf_grp.create_group('exp{}'.format(i))
+            cexp.attrs['param_names'] = fitMod.param_names(i)
             exps.append(cexp)
         for exp_grp, i in zip(exps, range(args.exp_start, args.exp_finish + 1)):
             nparams = 2 * i + 1
@@ -110,14 +112,14 @@ def main():
             # set name, not index
             counter.set_curN(names[i])
             name_string = "{:10} {:25}".format(group, names[i])
-            bestRes = fitMod.fit(data[i], errs[i], time, method=args.method, name_string = name_string)
+            bestRes = fitMod.fit(data[i], errs[i], time, method=args.method, name_string=name_string)
 
             try:
                 for group_hdf, res in zip(exps, bestRes):
                     if res.success:
                         # print(res)
                         group_hdf['params'][i] = res.param_vals
-                        group_hdf['covar'][i]  = res.covar
+                        group_hdf['covar'][i] = res.covar
                         ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
                         stat_list = []
                         for key in STAT_PARAMS_NAMES:
@@ -128,15 +130,14 @@ def main():
                         ## КОНЕЦ УПОРОТОГО МОМЕНТА
                     else:
                         print("{}: fit failed".format(name_string), file=sys.stderr)
-                        #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
-
 
             except Exception as e:
                 print("{}: ERROR in fit".format(name_string), file=sys.stderr)
                 print(type(e), e, file=sys.stderr)
-                #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
             print("{}: DONE".format(name_string))
+    finish = time.monotonic()
+    counter.set_overalltime(finish-start)
     counter.save('fitStatistic.csv')
     print(counter)
     # fitMod.save_toFile('out')
