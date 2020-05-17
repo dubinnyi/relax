@@ -53,6 +53,9 @@ class Fitter:
     def nexp(self):
         return self.expInterval[1] + 1 - self.expInterval[0]
 
+    def param_names(self, nexp):
+        return BASE_KEY[:(2*nexp + 1)]
+
     ## Setters
     @nexp.setter
     def nexp(self, minexp, maxexp):
@@ -152,6 +155,8 @@ class Fitter:
             info_string = ""
             if not self.model.has_covar():
                 info_string = "-- No covariance matrix in result"
+            elif not self.model.check_errors():
+                info_string = "-- Errors are too big"
             elif not bestFit_once:
                 bestFit_once = fit_once
             elif bestFit_once and bestFit_once.chisqr > fit_once.chisqr:
@@ -165,7 +170,7 @@ class Fitter:
         return bestFit_once, success_once
 
     def change_init(self):
-        rndmizer.seed()
+        rndmizer = np.random.default_rng()
         new_val = c.copy(BASE_VAL)
         new_val[1::2] = new_val[1::2] * rndmizer.uniform(*self.randFactor)
         self.init_values = dict(zip(BASE_KEY[:(2*self.cexp + 1)], new_val[:(2*self.cexp + 1)]))
