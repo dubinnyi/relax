@@ -6,6 +6,7 @@ from threadpoolctl import threadpool_limits
 
 import numpy as np
 import utils as u
+import time
 
 from fitter.fitting import Fitter
 from counter import Counter
