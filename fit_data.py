@@ -114,7 +114,7 @@ def main():
             s = args.idata.split('-')
             if len(s) == 1:
                 fit_start = int(s[0])
-                fit_end = fit_start
+                fit_end = fit_start + 1
             elif len(s) >= 2:
                 fit_start = int(s[0])
                 fit_end = int(s[1]) + 1
