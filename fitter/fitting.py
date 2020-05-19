@@ -126,6 +126,7 @@ class Fitter:
                     self.save_result(fit_ntry, success_ntry)
                     if bestFit_ntry:
                         print("{}: Best CHISQR = {:8.2f}".format(self.name_string, bestFit_ntry.chisqr))
+                        print("Best fit report:\n{}".format(bestFit_ntry.fit_report()))
                     else:
                         print("{}: NO RESULT FOUND".format(self.name_string))
             except AttributeError as e:
