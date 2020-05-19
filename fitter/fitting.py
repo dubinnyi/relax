@@ -126,7 +126,7 @@ class Fitter:
                     self.save_result(fit_ntry, success_ntry)
                     if bestFit_ntry:
                         print("{}: Best CHISQR = {:8.2f}".format(self.name_string, bestFit_ntry.chisqr))
-                        print("Best fit report:\n{}".format(bestFit_ntry.fit_report()))
+                        print("{}: Best fit report:\n{}".format(self.name_string, bestFit_ntry.fit_report()))
                     else:
                         print("{}: NO RESULT FOUND".format(self.name_string))
             except AttributeError as e:
@@ -168,6 +168,9 @@ class Fitter:
                 success_once = True
             print("{}: {} {}". format(name_string_exp_try, chi_sqr_string, info_string))
             self.change_init()
+        name_string_exp_best = "{} exp{:<2} - BEST".\
+                format(self.name_string, self.cexp)
+        print("{}: best model is:\n{}". format(name_string_exp_best, bestFit_once.fit_report()))
         return bestFit_once, success_once
 
     def change_init(self):
