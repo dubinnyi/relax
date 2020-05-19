@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -u
 import sys
 import h5py
-import time
+import time as systime
 
 import numpy as np
 import lmfit as lm
@@ -84,7 +84,7 @@ def main():
     counter.set_curTcf(args.tcf)
     fid = h5py.File(args.output, 'w')
 
-    start=time.monotonic()
+    start=systime.monotonic()
     for group in args.group:
         counter.set_curGroup(group)
         try:
@@ -156,7 +156,7 @@ def main():
                 print(type(e), e, file=sys.stderr)
 
             print("{}: DONE".format(name_string))
-    finish = time.monotonic()
+    finish = systime.monotonic()
     counter.set_overalltime(finish-start)
     counter.save('fitStatistic.csv')
     print(counter)

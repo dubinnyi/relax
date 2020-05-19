@@ -6,7 +6,7 @@ from threadpoolctl import threadpool_limits
 
 import numpy as np
 import utils as u
-import time
+import time as systime
 
 from fitter.fitting import Fitter
 from counter import Counter
@@ -100,7 +100,7 @@ def main():
     fid = h5py.File(args.output, 'w')
     counter = Counter()
 
-    start=time.monotonic()
+    start=systime.monotonic()
     for group in args.group:
         fitMod = Fitter(minexp=args.exp_start, maxexp=args.exp_finish,
                         ntry=args.ntry, tcf_type=args.tcf)
@@ -189,7 +189,7 @@ def main():
 
             print("{}: DONE".format(name_string))
 
-    finish = time.monotonic()
+    finish = systime.monotonic()
     counter.set_overalltime(finish-start)
     counter.save('fitStatistic.csv')
     print(counter)
