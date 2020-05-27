@@ -107,7 +107,7 @@ class Fitter:
         length = y.shape[0]
         x = self.time
         #################
-        return self.model.fit(data=y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', **init_values, tcf_type=self.tcf_type)
+        return self.model.fit(data=y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', scale_covar=False, **init_values, tcf_type=self.tcf_type)
 
     def fit_NtryNexp(self, **kwargs):
         self.prep_model()
@@ -116,18 +116,19 @@ class Fitter:
         for self.cexp in self.exp_iter():
             fit_ntry, success_ntry = self.fit_ntry()
             try:
-                if not bestFit_ntry:
-                    bestFit_ntry = fit_ntry
+                if success_ntry:
+                    if not bestFit_ntry:
+                        bestFit_ntry = fit_ntry
 
-                elif bestFit_ntry.chisqr > fit_ntry.chisqr:
-                    bestFit_ntry = fit_ntry
+                    elif bestFit_ntry.chisqr > fit_ntry.chisqr:
+                        bestFit_ntry = fit_ntry
 
-                if self.cexp == self.expInterval[1]:
-                    self.save_result(fit_ntry, success_ntry)
-                    if bestFit_ntry:
-                        print("{}: Best CHISQR = {:8.2f}".format(self.name_string, bestFit_ntry.chisqr))
-                    else:
-                        print("{}: NO RESULT FOUND".format(self.name_string))
+                    if self.cexp == self.expInterval[1]:
+                        self.save_result(fit_ntry, success_ntry)
+                        if bestFit_ntry:
+                            print("{}: Best CHISQR = {:8.4f}".format(self.name_string, bestFit_ntry.chisqr))
+                        else:
+                            print("{}: NO RESULT FOUND".format(self.name_string))
             except AttributeError as e:
                 print("{}: ERROR!! res is None.".format(self.name_string))
                 print("Error is {}".format(e))
@@ -151,7 +152,7 @@ class Fitter:
 
             name_string_exp_try = "{} exp{:<2} - try{:<2}".\
                 format(self.name_string, self.cexp, itry + 1)
-            chi_sqr_string = "CHISQR= {:8.2f}".format(fit_once.chisqr)
+            chi_sqr_string = "CHISQR= {:8.4f}".format(fit_once.chisqr)
             info_string = ""
             if not self.model.has_covar():
                 info_string = "-- No covariance matrix in result"
@@ -180,7 +181,7 @@ class Fitter:
             stats = {'aic': result.aic, 'chisqr': result.chisqr, 'bic': result.bic,
                     'redchi': result.redchi}
 
-            data = {'params': result.best_values,
+            data = {'params': result.best_values, 'covar_vars': result.var_names,
                     'stats': stats, 'covar': result.covar, 'success': successRate,
                     'init_values': result.init_values, 'nexp': self.nexp}
         else:
@@ -190,6 +191,7 @@ class Fitter:
                     'init_values': init_values, 'nexp': self.nexp}
 
         self.bestResults[self.cexp - self.expInterval[0]] = FitResult(**data)
+        # print(self.bestResults[self.cexp - self.expInterval[0]])
 
     # Savings and Results
 

@@ -5,9 +5,12 @@ import h5py
 import numpy as np
 import utils as u
 
+REFERENCE_PARAMS_SEQ = ['c', 'adecay', 'aamplitude', 'bdecay', 'bamplitude', 'cdecay', 'camplitude',
+            'ddecay', 'damplitude', 'edecay', 'eamplitude', 'fdecay', 'famplitude',
+            'gdecay', 'gamplitude','hdecay', 'hamplitude','idecay', 'iamplitude']
 
 class FitResult():
-    def __init__(self, init_values=None, params=None,
+    def __init__(self, init_values=None, params=None, covar_vars=None,
                  covar=None, stats=None, nexp=None, success=None):
         self._nexp = nexp
         self._init_values = init_values
@@ -17,15 +20,25 @@ class FitResult():
         self._param_errs = None
 
         self._covar = covar
+        self._covar_names = covar_vars
         self._stats = stats
         self.success = success
 
     def __post_init__(self):
         self._param_errs = np.sqrt(np.diag(self._covar))
+        self.sort_covar()
 
 
     def calc_paramErrs(self):
         self._param_errs = np.sqrt(np.diag(self._covar))
+
+    def sort_covar(self):
+        idx = []
+        for ref_par, _ in zip(PARAMETERS_SEQ, self._covar_names):
+            idx.append(self._covar_names.index(ref_par))
+        new_covar = self.covar[idx]
+        new_covar = new_covar[:, idx]
+        self.covar = new_covar
 
     # Getters
     @property
@@ -91,7 +104,7 @@ class FitResult():
     def __str__(self):
         output = "Результаты фита\n"
         output += 'Число экспонент: {}\n'.format(self.nexp)
-        output += 'Используемый метод: {}\n'.format(self.model)
+        # output += 'Используемый метод: {}\n'.format(self.model)
         output += 'Параметры: {}\n'.format(self._param_names)
         output += 'Начальные значения параметров: {}\n'.format(self.initialValues)
 
@@ -99,6 +112,7 @@ class FitResult():
             output += 'Выписывание прошло успешно\n'
             output += 'Полученные значения параметров: {}\n'.format(self._param_vals)
             output += 'Ковариационная матрица:\n{}\n'.format(self.covar)
+            output += 'Порядок значений в ковариацианной матрице:\n{}\n'.format(self._covar_names)
             output += 'Статистики: {}\n'.format(self.stats)
         else:
             output += 'Не удалось выполнить вписывание\n'
