@@ -148,7 +148,7 @@ class Fitter:
             with FitInfo(self.cexp, output=self.logger) as fi:
                 fit_once = self._fit(self.init_values)
                 ## Проверить можно ли иначе проверять наличие ковариационной матрицы
-                fi.add_successRate(self.model.has_covar())
+                fi.add_successRate(self.model.has_covar() and self.model.check_errors())
 
             name_string_exp_try = "{} exp{:<2} - try{:<2}".\
                 format(self.name_string, self.cexp, itry + 1)
@@ -157,7 +157,7 @@ class Fitter:
             if not self.model.has_covar():
                 info_string = "-- No covariance matrix in result"
             elif not self.model.check_errors():
-                info_string = "-- Errors are too big"
+                info_string = "{} -- Errors are too big".format(np.sqrt(np.diag(fit_once.covar)))
             elif not bestFit_once:
                 bestFit_once = fit_once
             elif bestFit_once and bestFit_once.chisqr > fit_once.chisqr:
