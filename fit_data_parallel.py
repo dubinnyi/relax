@@ -4,6 +4,7 @@ import h5py
 import copy
 from threadpoolctl import threadpool_limits
 
+import time as t
 import numpy as np
 import utils as u
 
@@ -99,7 +100,7 @@ def main():
     fid = h5py.File(args.output, 'w')
     counter = Counter()
 
-    start=time.monotonic()
+    start=t.monotonic()
     for group in args.group:
         fitMod = Fitter(minexp=args.exp_start, maxexp=args.exp_finish,
                         ntry=args.ntry, tcf_type=args.tcf)
@@ -173,7 +174,7 @@ def main():
 
             print("{}: DONE".format(name_string))
 
-    finish = time.monotonic()
+    finish = t.monotonic()
     counter.set_overalltime(finish-start)
     counter.save('fitStatistic.csv')
     print(counter)
