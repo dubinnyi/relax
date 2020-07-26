@@ -1,8 +1,9 @@
 import sys
 import h5py
 
-import numpy as np
 import copy as c
+import numpy as np
+import logging as log
 import matplotlib.pyplot as plt
 
 from fitter.exp_model import CModel
@@ -17,6 +18,30 @@ BASE_KEY = ('c', 'adecay', 'aamplitude', 'bdecay', 'bamplitude', 'cdecay', 'camp
             'gdecay', 'gamplitude','hdecay', 'hamplitude','idecay', 'iamplitude')
 
 rndmizer = np.random.RandomState()
+
+LOG_MODE = {
+    'i': log.INFO,
+    'd': log.DEBUG,
+    'e': log.ERROR,
+    'w': log.WARNING,
+    'c': log.CRITICAL
+}
+
+
+def create_logger(log_filename='fitLog.log', mode='i'):
+    loggy = log.getLogger(log_filename)
+    loggy.setLevel(LOG_MODE["d"])
+    logfile_handler = log.FileHandler(log_filename)
+    f = log.Formatter('%(levelname)8s %(message)s')
+    logfile_handler.setFormatter(f)
+    logfile_handler.setLevel(LOG_MODE['e'])
+    logstream_handler = log.StreamHandler()
+    f = log.Formatter('%(levelname)8s %(message)s')
+    logstream_handler.setFormatter(f)
+    logstream_handler.setLevel(LOG_MODE[mode])
+    loggy.addHandler(logfile_handler)
+    loggy.addHandler(logstream_handler)
+    return loggy
 
 class Fitter:
     def __init__(self, minexp=4, maxexp=6, randFactor=(.2, 5), ntry=5, tcf_type='acf', logger=print):
@@ -37,8 +62,22 @@ class Fitter:
 
         self.bestResults = [None] * self.nexp
         self.anyResult = False
+
         self.fitInfos = [None] * self.nexp
         self.logger = logger
+        self.log_info = create_logger(mode='d')
+        self.verbose_mode = None
+        # self.log_test()
+
+    def log_test(self):
+        self.log_info.info("This is Info")
+        self.log_info.warning("This is Warning")
+        self.log_info.error("This is ERROR")
+        self.log_info.debug("This is Debug")
+        self.log_info.critical("This is Critical")
+        print(self.log_info.getEffectiveLevel())
+
+
 
     ## Iterators
     def exp_iter(self):
@@ -69,7 +108,7 @@ class Fitter:
         elif dt and nframe:
             self.time = np.array([i*dt for i in range(nframe)])
         else:
-            print('ERROR!! Missing arguments. Please set timeline or dt with number of frames', file=sys.stderr)
+            self.log_info.error('ERROR!! Missing arguments. Please set timeline or dt with number of frames')
 
     def set_ntry(self, ntry):
         self.ntry = ntry
@@ -77,9 +116,7 @@ class Fitter:
     def set_randomFactor(self, randFactor):
         self.randFactor = randFactor
 
-
     ## Prepare to Fit
-
     def prep_model(self):
         self.cexp = self.expInterval[0]
         self.model = CModel(self.expInterval[0])
@@ -95,7 +132,7 @@ class Fitter:
         if method == 'NexpNtry':
             self.fit_NtryNexp(*args, **kwargs)
         else:
-            print('ERROR!! Method should be NexpNtry', file=sys.stderr)
+            self.log_info.error('ERROR!! Method should be NexpNtry')
 
         return self.bestResults
 
@@ -126,13 +163,13 @@ class Fitter:
                     if self.cexp == self.expInterval[1]:
                         self.save_result(fit_ntry, success_ntry)
                         if bestFit_ntry:
-                            print("{}: Best CHISQR = {:8.4f}".format(self.name_string, bestFit_ntry.chisqr))
+                            self.log_info.info("{}: Best CHISQR = {:8.4f}".format(self.name_string, bestFit_ntry.chisqr))
                         else:
-                            print("{}: NO RESULT FOUND".format(self.name_string))
+                            self.log_info.warning("{}: NO RESULT FOUND".format(self.name_string))
             except AttributeError as e:
-                print("{}: ERROR!! res is None.".format(self.name_string))
-                print("Error is {}".format(e))
-                print("It happend while fitting {} exponents. With those initial values: {}".\
+                self.log_info.error("{}: ERROR!! res is None.".format(self.name_string))
+                self.log_info.error("Error is {}".format(e))
+                self.log_info.error("It happend while fitting {} exponents. With those initial values: {}".\
                       format(self.cexp, self.init_values), file=sys.stderr)
                 success_ntry = False
                 return
@@ -157,7 +194,7 @@ class Fitter:
             if not self.model.has_covar():
                 info_string = "-- No covariance matrix in result"
             elif not self.model.check_errors():
-                info_string = "{} -- Errors are too big".format(np.sqrt(np.diag(fit_once.covar)))
+                info_string = "-- Errors are too big"#\n{}".format(np.sqrt(np.diag(fit_once.covar)))
             elif not bestFit_once:
                 bestFit_once = fit_once
             elif bestFit_once and bestFit_once.chisqr > fit_once.chisqr:
@@ -166,7 +203,7 @@ class Fitter:
 
             if bestFit_once:
                 success_once = True
-            print("{}: {} {}". format(name_string_exp_try, chi_sqr_string, info_string))
+            self.log_info.info("{}: {} {}". format(name_string_exp_try, chi_sqr_string, info_string))
             self.change_init()
         return bestFit_once, success_once
 
