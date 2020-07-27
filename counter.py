@@ -107,7 +107,7 @@ class Counter:
             for n in self.data['N'].unique():
                 sR = self.data[(self.data['N'] == n)]['success rate'].sum()
                 successRate += 1 if sR else 0
-        return successRate
+        return int(successRate)
 
     def __str__(self):
         output = "_________ОБЩАЯ СТАТИСТИКА________\n"

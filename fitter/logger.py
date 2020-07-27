@@ -4,7 +4,7 @@ import os
 
 
 def create_logger(args):
-    logger = log.getLogger("Logfile_logger")
+    logger = log.getLogger("fitLog.log")
     logger.setLevel(log.DEBUG)
     log_filename = "{}.log".format(args.name)
     # if os.path.isfile(log_filename):

@@ -41,8 +41,6 @@ def load_data(args, group):
 
     elif args.type == 'hdf':
         fd = h5py.File(args.filename, 'r')
-        if group not in fd.keys():
-            raise Exception("Wrong groupname")
         time = fd['time'][:]
         func = fd[group][args.tcf]['mean'][:]
         errs = fd[group][args.tcf]['errs'][:]
@@ -84,7 +82,9 @@ def main():
     counter.set_curTcf(args.tcf)
     fid = h5py.File(args.output, 'w')
 
+
     start=systime.monotonic()
+
     for group in args.group:
         counter.set_curGroup(group)
         try:
@@ -156,7 +156,9 @@ def main():
                 print(type(e), e, file=sys.stderr)
 
             print("{}: DONE".format(name_string))
+
     finish = systime.monotonic()
+
     counter.set_overalltime(finish-start)
     counter.save('fitStatistic.csv')
     print(counter)

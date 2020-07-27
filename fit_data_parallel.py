@@ -96,11 +96,14 @@ def main():
     parser.add_argument('-o', '--output', default='out.hdf', help='filename for saving results')
     parser.add_argument('-c', '--time-cut', default=0, type=float,\
                          help='time in ps which need to be cut from timeline')
+    parser.add_argument('--nc',type=int, help='number of cpu (DEBUG)')
+    # parser.add_argument('--lm', required=False, action='store_true', help='enable silent mode (DEBUG)')
     args = parser.parse_args()
     fid = h5py.File(args.output, 'w')
     counter = Counter()
 
     start=systime.monotonic()
+
     for group in args.group:
         fitMod = Fitter(minexp=args.exp_start, maxexp=args.exp_finish,
                         ntry=args.ntry, tcf_type=args.tcf)
@@ -166,22 +169,24 @@ def main():
             try:
                 for rc, rf, name_string in result:
                     counter = counter + rc
-                    for (i, bestRes) in rf:
-                        for group_hdf, res in zip(exps, bestRes):
-                            if res and hasattr(res, 'success') and res.success:
-                                # print(res)
-                                group_hdf['params'][i] = res.param_vals
-                                group_hdf['covar'][i]  = res.covar
-                                ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
-                                stat_list = []
-                                for key in STAT_PARAMS_NAMES:
-                                    vals = res.stats
-                                    stat_list += [vals[key]]
+                    # print(type(rf), len(rf))
+                    i, bestRes = rf
+                    # print(type(bestRes), len(bestRes))
+                    for group_hdf, res in zip(exps, bestRes):
+                        if res and hasattr(res, 'success') and res.success:
+                            # print(res)
+                            group_hdf['params'][i] = res.param_vals
+                            group_hdf['covar'][i]  = res.covar
+                            ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
+                            stat_list = []
+                            for key in STAT_PARAMS_NAMES:
+                                vals = res.stats
+                                stat_list += [vals[key]]
 
-                                group_hdf['stats'][i] = tuple(stat_list)
-                                ## КОНЕЦ УПОРОТОГО МОМЕНТА
-                            else:
-                                print("{}: fit failed".format(name_string), file=sys.stderr)
+                            group_hdf['stats'][i] = tuple(stat_list)
+                            ## КОНЕЦ УПОРОТОГО МОМЕНТА
+                        else:
+                            print("{}: fit failed".format(name_string), file=sys.stderr)
 
             except Exception as e:
                 print("{}: ERROR in fit".format(name_string), file=sys.stderr)
@@ -190,6 +195,7 @@ def main():
             print("{}: DONE".format(name_string))
 
     finish = systime.monotonic()
+
     counter.set_overalltime(finish-start)
     counter.save('fitStatistic.csv')
     print(counter)
