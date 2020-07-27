@@ -86,7 +86,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("filename", type=str)
     parser.add_argument('-t', '--type', default='npy', help="Type of using datafile. Can be: \'npy\', \'csv\', \'hdf\'")
-    parser.add_argument('-i', '--istart', default=0, type=int, help='index in data array for start with (DEBUG)')
+    parser.add_argument('-i', '--idata', type=str, help='index in data array for fit, e.g. 0-1')
     parser.add_argument('-s', '--exp-start', default=4, type=int, help='Number of exponents to start from')
     parser.add_argument('-f', '--exp-finish', default=6, type=int, help='Number of exponents when finish')
     parser.add_argument('-n', '--ntry', default=5, type=int, help='Number of tryings (for method NexpNtry)')
@@ -132,13 +132,28 @@ def main():
             exp_grp.create_dataset('covar', data=np.zeros((data_size, nparams, nparams)))
             exp_grp.create_dataset('stats', data=u.create_nameArray(data_size, STAT_PARAMS_NAMES))
 
-        start = args.istart if args.istart < data_size else 0
+        if args.idata:
+            s = args.idata.split('-')
+            if len(s) == 1:
+                fit_start = int(s[0])
+                fit_end = fit_start + 1
+            elif len(s) >= 2:
+                fit_start = int(s[0])
+                fit_end = int(s[1]) + 1
+            else:
+                fit_start = 0
+                fit_end = data_size
+            fit_start = 0 if fit_start < 0 else fit_start
+            fit_end = data_size if fit_end > data_size else fit_end
+        else:
+            fit_start = 0
+            fit_end = data_size
 
         # prepare arguments for parallel fitting
         arg_list = [{'data': data[i], 'errs': errs[i], 'time': time,
                      'idx': i, 'names': names[i], 'group': group,
                      'fitter': copy.copy(fitMod), 'method':args.method,
-                     'counter': copy.deepcopy(counter)} for i in range(start, data_size)]
+                     'counter': copy.deepcopy(counter)} for i in range(fit_start, fit_end)]
         # print(arg_list)
         # print("Start pool of {} CPU".format(nproc))
         with threadpool_limits(limits=1, user_api='blas'):

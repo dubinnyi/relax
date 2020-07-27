@@ -64,7 +64,7 @@ def param_autodetect(param):
         coeff = evenlist[-1]
         print("tau {}".format(tau.shape))
         print("ampl {}".format(ampl.shape))
-    return tau, ampl, coeff, type
+    return tau, ampl, coeff, tcf_type
 
 
 def expall(param, arrtime):
