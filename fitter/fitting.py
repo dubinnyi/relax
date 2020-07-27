@@ -207,7 +207,10 @@ class Fitter:
             self.change_init()
         name_string_exp_best = "{} exp{:<2} - BEST".\
                 format(self.name_string, self.cexp)
-        print("{}: best model is:\n{}". format(name_string_exp_best, bestFit_once.fit_report()))
+        if bestFit_once:
+            print("{}: best model is:\n{}". format(name_string_exp_best, bestFit_once.fit_report()))
+        else:
+            print("{}: NO FIT FOUND". format(name_string_exp_best))
         return bestFit_once, success_once
 
     def change_init(self):
