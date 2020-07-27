@@ -17,16 +17,21 @@ class FitResult():
 
         self._param_names = list(params.keys()) if params else list(init_values.keys())
         self._param_vals = np.array(list(params.values())) if params else None
-        self._param_errs = None
+        # self._param_errs = None
 
         self._covar = covar
         self._covar_names = covar_vars
         self._stats = stats
         self.success = success
 
-    def __post_init__(self):
-        self._param_errs = np.sqrt(np.diag(self._covar))
-        self.sort_covar()
+# В версии python 3.8 нужно через post_init для гарантии выполнения после всех присвоений
+        self._param_errs = None if not success else np.sqrt(np.diag(self._covar))
+        if success:
+            self.sort_covar()
+
+    # def __post_init__(self):
+    #     self._param_errs = np.sqrt(np.diag(self._covar))
+    #     self.sort_covar()
 
 
     def calc_paramErrs(self):
@@ -34,7 +39,7 @@ class FitResult():
 
     def sort_covar(self):
         idx = []
-        for ref_par, _ in zip(PARAMETERS_SEQ, self._covar_names):
+        for ref_par, _ in zip(REFERENCE_PARAMS_SEQ, self._covar_names):
             idx.append(self._covar_names.index(ref_par))
         new_covar = self.covar[idx]
         new_covar = new_covar[:, idx]
