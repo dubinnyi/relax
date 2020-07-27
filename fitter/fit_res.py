@@ -5,9 +5,9 @@ import h5py
 import numpy as np
 import utils as u
 
-REFERENCE_PARAMS_SEQ = ['c', 'adecay', 'aamplitude', 'bdecay', 'bamplitude', 'cdecay', 'camplitude',
-            'ddecay', 'damplitude', 'edecay', 'eamplitude', 'fdecay', 'famplitude',
-            'gdecay', 'gamplitude','hdecay', 'hamplitude','idecay', 'iamplitude']
+REFERENCE_PARAMS_SEQ = ['c', 'aamplitude', 'adecay', 'bamplitude', 'bdecay', 'camplitude', 'cdecay',
+            'damplitude', 'ddecay', 'eamplitude', 'edecay', 'famplitude', 'fdecay',
+            'gamplitude', 'gdecay','hamplitude', 'hdecay','iamplitude', 'idecay']
 
 class FitResult():
     def __init__(self, init_values=None, params=None, covar_vars=None,

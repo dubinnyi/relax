@@ -13,9 +13,9 @@ from fitinfo import FitInfo
 BASE_VAL = np.array([0.1, 1, 0.01, 10, 0.01, 50, 0.01,
                      100, 0.01, 1000, 0.01, 2000, 0.01,
                      3000, 0.01, 4000, 0.01, 5000, 0.01])
-BASE_KEY = ('c', 'adecay', 'aamplitude', 'bdecay', 'bamplitude', 'cdecay', 'camplitude',
-            'ddecay', 'damplitude', 'edecay', 'eamplitude', 'fdecay', 'famplitude',
-            'gdecay', 'gamplitude','hdecay', 'hamplitude','idecay', 'iamplitude')
+BASE_KEY = ('c', 'aamplitude', 'adecay', 'bamplitude', 'bdecay', 'camplitude', 'cdecay',
+            'damplitude', 'ddecay', 'eamplitude', 'edecay', 'famplitude', 'fdecay',
+            'gamplitude', 'gdecay','hamplitude', 'hdecay','iamplitude', 'idecay')
 
 rndmizer = np.random.RandomState()
 
