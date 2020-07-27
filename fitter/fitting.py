@@ -207,6 +207,13 @@ class Fitter:
                 success_once = True
             self.log_info.info("{}: {} {}". format(name_string_exp_try, chi_sqr_string, info_string))
             self.change_init()
+
+        name_string_exp = "{} exp{:<2}". \
+            format(self.name_string, self.cexp)
+        if bestFit_once:
+            self.log_info.info("{}: fit_report() is: {}".format(name_string_exp, bestFit_once.fit_report()))
+        else:
+            self.log_info.info("{}: NO RESULT".format(name_string_exp))
         return bestFit_once, success_once
 
     def change_init(self):
