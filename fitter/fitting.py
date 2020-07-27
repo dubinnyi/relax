@@ -216,7 +216,8 @@ class Fitter:
         return bestFit_once, success_once
 
     def change_init(self):
-        #rndmizer = np.random.default_rng()
+
+        rndmizer = np.random.RandomState()
         new_val = c.copy(BASE_VAL)
         new_val[1::2] = new_val[1::2] * np.random.uniform(*self.randFactor)
         self.init_values = dict(zip(BASE_KEY[:(2*self.cexp + 1)], new_val[:(2*self.cexp + 1)]))
