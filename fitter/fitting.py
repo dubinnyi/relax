@@ -207,19 +207,13 @@ class Fitter:
                 success_once = True
             self.log_info.info("{}: {} {}". format(name_string_exp_try, chi_sqr_string, info_string))
             self.change_init()
-        name_string_exp_best = "{} exp{:<2} - BEST".\
-                format(self.name_string, self.cexp)
-        if bestFit_once:
-            print("{}: best model is:\n{}". format(name_string_exp_best, bestFit_once.fit_report()))
-        else:
-            print("{}: NO FIT FOUND". format(name_string_exp_best))
         return bestFit_once, success_once
 
     def change_init(self):
-
+        # rndmizer = np.random.default_rng()
         rndmizer = np.random.RandomState()
         new_val = c.copy(BASE_VAL)
-        new_val[1::2] = new_val[1::2] * np.random.uniform(*self.randFactor)
+        new_val[1::2] = new_val[1::2] * rndmizer.uniform(*self.randFactor)
         self.init_values = dict(zip(BASE_KEY[:(2*self.cexp + 1)], new_val[:(2*self.cexp + 1)]))
 
     def save_result(self, result, successRate):

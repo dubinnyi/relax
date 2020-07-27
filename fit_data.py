@@ -1,17 +1,15 @@
 #!/usr/bin/python3 -u
 import sys
 import h5py
-import time as systime
 
+import time as t
 import numpy as np
 import lmfit as lm
 import utils as u
 
-
 from fitter.fitting import Fitter
 from fitter.exp_model import CModel
 from counter import Counter
-
 
 from argparse import ArgumentParser
 
@@ -82,9 +80,7 @@ def main():
     counter.set_curTcf(args.tcf)
     fid = h5py.File(args.output, 'w')
 
-
-    start=systime.monotonic()
-
+    start=t.monotonic()
     for group in args.group:
         counter.set_curGroup(group)
         try:
@@ -156,9 +152,7 @@ def main():
                 print(type(e), e, file=sys.stderr)
 
             print("{}: DONE".format(name_string))
-
-    finish = systime.monotonic()
-
+    finish = t.monotonic()
     counter.set_overalltime(finish-start)
     counter.save('fitStatistic.csv')
     print(counter)
