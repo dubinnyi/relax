@@ -1,3 +1,5 @@
+#!/usr/bin/python3 -u
+
 import h5py
 import numpy as np
 
@@ -18,13 +20,17 @@ def main():
     parser.add_argument('-o', '--output', default='out.hdf', help='filename for saving results')
     args = parser.parse_args()
 
+    print("Parameters and errors in HDF file {}".format(args.filename))
     fid = h5py.File(args.filename, 'r')
     tcf = fid[args.group][args.tcf]
     for exp in range(args.exp_start, args.exp_finish + 1):
-        cov = tcf['exp{}'.format(exp)]['covar'][args.idata]
-        err = np.sqrt(np.diag(cov))
-        for err, par in zip(err, PARAMS_SEQ):
-            print("{:11} : {:.4f}".format(par, err))
+        print("data {}, exp{}:".format(args.idata,exp))
+        values = tcf['exp{}'.format(exp)]['params'][args.idata]
+        covar = tcf['exp{}'.format(exp)]['covar'][args.idata]
+        errors = np.sqrt(np.diag(covar))
+
+        for name, val, err in zip(PARAMS_SEQ, values, errors):
+            print("{:11} : {:13.6f} +/- {:13.6f}".format(name, val, err))
         print('\n')
 
 if __name__ == '__main__':
