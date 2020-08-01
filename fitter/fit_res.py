@@ -16,7 +16,7 @@ class FitResult():
         self._init_values = init_values
 
         self._param_names = list(params.keys()) if params else list(init_values.keys())
-        self._param_vals = np.array(list(params.values())) if params else None
+        self._param_vals = self.sort_vals(params) if params else None
         # self._param_errs = None
 
         self._covar = covar
@@ -47,6 +47,13 @@ class FitResult():
         new_covar = self.covar[idx]
         new_covar = new_covar[:, idx]
         self.covar = new_covar
+
+    def sort_vals(self, params):
+        par_vals = np.zeros(len(params))
+        for par_key, i in zip(REFERENCE_PARAMS_SEQ, range(len(params))):
+            par_vals[i] = params[par_key]
+        return par_vals
+
 
     # Getters
     @property
