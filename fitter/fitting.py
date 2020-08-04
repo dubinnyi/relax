@@ -211,7 +211,7 @@ class Fitter:
         name_string_exp = "{} exp{:<2}". \
             format(self.name_string, self.cexp)
         if bestFit_once:
-            self.log_info.info("{}: fit_report() is: {}".format(name_string_exp, bestFit_once.fit_report()))
+            self.log_info.info("{}: fit_report() is:\n{}".format(name_string_exp, bestFit_once.fit_report()))
         else:
             self.log_info.info("{}: NO RESULT".format(name_string_exp))
         return bestFit_once, success_once

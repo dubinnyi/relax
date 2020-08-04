@@ -20,6 +20,7 @@ NCPU = cpu_count()
 #os.system("taskset -p 0xff %d" % os.getpid())
 
 def load_data(args, group):
+    (time, func, errs, names) = (None, None, None, None)
     if args.type == 'npy':
         with open(args.filename, 'rb') as fd:
 
@@ -50,8 +51,6 @@ def load_data(args, group):
             names = fd[group][args.tcf].attrs['names']
             names = names.splitlines()
             errs[:, 0] = errs[:, 1]
-    else:
-        (time, func, errs, names) = (None, None, None, None)
     return time, func, errs, names
 
 def prepare_data(time, data, errs, time_cut):
