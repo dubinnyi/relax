@@ -10,9 +10,9 @@ from fitter.exp_model import CModel
 from fitter.fit_res import FitResult
 from fitinfo import FitInfo
 
-BASE_VAL = np.array([0.1, 1, 0.01, 10, 0.01, 50, 0.01,
-                     100, 0.01, 1000, 0.01, 2000, 0.01,
-                     3000, 0.01, 4000, 0.01, 5000, 0.01])
+BASE_VAL = np.array([0.1, 0.01, 5,    0.01, 10, 0.001, 50,
+                          0.01, 100,  0.01, 1000, 0.01, 2000,
+                          0.01, 3000, 0.01, 4000, 0.01, 5000])
 BASE_KEY = ('c', 'aamplitude', 'adecay', 'bamplitude', 'bdecay', 'camplitude', 'cdecay',
             'damplitude', 'ddecay', 'eamplitude', 'edecay', 'famplitude', 'fdecay',
             'gamplitude', 'gdecay','hamplitude', 'hdecay','iamplitude', 'idecay')
@@ -165,7 +165,7 @@ class Fitter:
                     if self.cexp == self.expInterval[1]:
                         self.save_result(fit_ntry, success_ntry)
                         if bestFit_ntry:
-                            self.log_info.info("{}: Best CHISQR = {:8.4f}".format(self.name_string, bestFit_ntry.chisqr))
+                            self.log_info.info("{}: Best CHISQR = {:10.4f}".format(self.name_string, bestFit_ntry.chisqr))
                         else:
                             self.log_info.warning("{}: NO RESULT FOUND".format(self.name_string))
             except AttributeError as e:
@@ -191,7 +191,7 @@ class Fitter:
 
             name_string_exp_try = "{} exp{:<2} - try{:<2}".\
                 format(self.name_string, self.cexp, itry + 1)
-            chi_sqr_string = "CHISQR= {:8.4f}".format(fit_once.chisqr)
+            chi_sqr_string = "CHISQR= {:10.4f}".format(fit_once.chisqr)
             info_string = ""
             if not self.model.has_covar():
                 info_string = "-- No covariance matrix in result"
@@ -220,7 +220,7 @@ class Fitter:
         # rndmizer = np.random.default_rng()
         rndmizer = np.random.RandomState()
         new_val = c.copy(BASE_VAL)
-        new_val[1::2] = new_val[1::2] * rndmizer.uniform(*self.randFactor)
+        new_val[2::2] = new_val[2::2] * rndmizer.uniform(*self.randFactor)
         self.init_values = dict(zip(BASE_KEY[:(2*self.cexp + 1)], new_val[:(2*self.cexp + 1)]))
 
     def save_result(self, result, successRate):

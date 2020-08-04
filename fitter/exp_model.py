@@ -53,14 +53,16 @@ class CModel(Model):
         for i in range(1, self.nexp + 1):
             currA = amp.format(Prefixes[i])
             currT = dec.format(Prefixes[i])
-            self.model.set_param_hint(currA, value=1.0, min=0)
-            self.model.set_param_hint(currT, value=1.0, min=0)
+            self.model.set_param_hint(currA, value=1.0, min=0.0)
+            self.model.set_param_hint(currT, value=1.0, min=0.0)
             cntrl_expr += ' + ' + currA
 
         self.params = self.model.make_params()
-        self.params.add('cntrl', value=1, min=1-1e-5, max=1+1e-5)
-        self.params['cntrl'].vary = True
-        self.params['cntrl'].expr = cntrl_expr
+        #self.params.add('cntrl')
+        #self.params['cntrl'].vary = True
+        #self.params['cntrl'].expr = cntrl_expr
+        #self.model.set_param_hint('ctrl', max=1.0, min=0.0)
+
 
     def fit(self, tcf_type='acf', *args, **kwargs):
         try:
