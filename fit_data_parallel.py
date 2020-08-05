@@ -9,6 +9,7 @@ import numpy as np
 import utils as u
 
 from fitter.fitting import Fitter
+from fitter.fit_res import REFERENCE_PARAMS_SEQ
 from counter import Counter
 
 from argparse import ArgumentParser
@@ -69,7 +70,7 @@ def prepare_data(time, data, errs, time_cut, sum_one_flag=False):
     time = np.delete(time, idx_del)
     data = np.delete(data, idx_del, axis=1)
     errs = np.delete(errs, idx_del, axis=1)
-    return time, data, errs
+    return time, data, errs, idx_del
 
 def pool_fit_one(args):
     group = args['group']
@@ -121,7 +122,7 @@ def main():
 
         try:
             time, data, errs, names = load_data(args, group)
-            time, data, errs = prepare_data(time, data, errs, args.time_cut, args.sum_one)
+            time, data, errs, idx_del = prepare_data(time, data, errs, args.time_cut, args.sum_one)
         except Exception as e:
             print(e)
             continue
@@ -140,6 +141,9 @@ def main():
             exp_grp.create_dataset('params', data=np.zeros((data_size, nparams)))
             exp_grp.create_dataset('covar', data=np.zeros((data_size, nparams, nparams)))
             exp_grp.create_dataset('stats', data=u.create_nameArray(data_size, STAT_PARAMS_NAMES))
+            param_names = '\n'.join(REFERENCE_PARAMS_SEQ[:nparams])
+            exp_grp.create_dataset('param_names', data=param_names)
+            exp_grp.create_dataset('idx_del', data=idx_del)
 
         if args.idata:
             s = args.idata.split('-')
