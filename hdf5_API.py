@@ -1,3 +1,5 @@
+#!/usr/pin/python3 -u
+
 import sys
 
 import numpy as np
@@ -78,6 +80,16 @@ class hdfAPI(File):
         items = list(self['/'].values())
         names = items[0][tcf][gname]['names'][()]
         return names
+
+    def get_atoms(self, tcf, gname):
+        items = list(self['/'].values())
+        atoms = items[0][tcf][gname]['atoms'][()]
+        return atoms
+
+    def get_smarts(self, tcf, gname):
+        items = list(self['/'].values())
+        smarts = items[0][tcf][gname]['smarts'][()]
+        return smarts
 
     def get_trjCount(self):
         return len(self.get_trjList())

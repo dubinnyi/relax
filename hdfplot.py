@@ -39,9 +39,18 @@ class HdfPlotError(Exception):
 
 
 def param_autodetect(params):
-    coeff = params[0]
-    ampl = params[1::2]
-    tau  = params[2::2]
+    if params.ndim == 1:
+        coeff = params[0]
+        ampl = params[1::2]
+        tau  = params[2::2]
+    elif params.ndim == 2:
+        coeff = params[:,0]
+        ampl = params[:,1::2]
+        tau  = params[:,2::2]
+    else:
+        print("Error in params_autodetec: ndim = {}, but the number of dimensions should be 1 or 2".
+              format(params.ndim))
+        coeff, ampl, tau = None, None, None
     return tau, ampl, coeff, None
 
 
@@ -104,7 +113,7 @@ def main(args):
         for exp in exps_infile:
             params[exp] = fd_exps[exp]['params'][:]
             stats[exp] = fd_exps[exp]['stats'][:]
-            taus[exp], ampls[exp], coeff, tcf_type = param_autodetect(params[exp][0, :])
+            taus[exp], ampls[exp], coeff, tcf_type = param_autodetect(params[exp])
 
             # print("params[{}].shape: {}".format(exp, params[exp].shape))
             # print("stats[{}].shape: {}".format(exp, stats[exp].shape))
@@ -143,7 +152,7 @@ def main(args):
             # label6 = '6 exps {:>7.2f}'.format(stat6[res][2])
         # else:
         #     (label4, label5, label6) = ('4 exps', '5 exps', '6 exps')
-        print("labels: {}".format(labels))
+        # print("labels: {}".format(labels))
 
         fig, ax = plt.subplots(1, 2, figsize=(10, 5))
         fig.suptitle(names[res])
@@ -203,6 +212,7 @@ def main(args):
                                   time[:ntime])[1:],
                            label=labels[exp], zorder=10, color=colors[exp])
         ax[1].set_ylim(ylim)
+        ax[1].set_xlim((time[1],time[ntime]))
         ax[1].legend()
         plt.show()
         plt.close()

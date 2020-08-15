@@ -106,7 +106,7 @@ def main():
     parser.add_argument('-c', '--time-cut', default=3.0, type=float,
                          help='time in ps which need to be cut from timeline')
     parser.add_argument('-1','--sum-one', action='store_true', help='Constrain the sum of all amplitudes to be exactly one (1.000) for ACFs')
-    parser.add_argument('--nc',type=int, help='number of cpu (DEBUG)')
+    parser.add_argument('--ncpu',type=int, help='number of cpu (DEBUG)', default = NCPU)
     # parser.add_argument('--lm', required=False, action='store_true', help='enable silent mode (DEBUG)')
     args = parser.parse_args()
     fid = h5py.File(args.output, 'w')
@@ -168,9 +168,12 @@ def main():
                      'fitter': copy.copy(fitMod), 'method':args.method,
                      'counter': copy.deepcopy(counter)} for i in range(fit_start, fit_end)]
         # print(arg_list)
-        # print("Start pool of {} CPU".format(nproc))
+        nproc =  args.ncpu
+        if nproc > NCPU:
+            nproc = NCPU
+        print("Start pool of {} CPU".format(nproc))
         with threadpool_limits(limits=1, user_api='blas'):
-            pool = Pool()
+            pool = Pool(nproc)
             res_par = pool.map_async(pool_fit_one, arg_list)
 
             pool.close()

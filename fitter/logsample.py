@@ -2,6 +2,14 @@ import numpy as np
 import sys
 
 
+class LogsamplerError(Exception):
+    def __init__(self, message=''):
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+
 def calc_poly(p, t):
     # Calculate polynomial with array of coefficients
     # p - array of coefficients, shape (deg+1, K) or (deg+1,)
@@ -19,15 +27,28 @@ def calc_poly(p, t):
             poly *= t
             poly += p[i]
     else:
-        print("Arrays with ndim>2 are not supported", sys.stderr)
-        return None
+        raise LogsamplerError("Arrays with ndim>2 are not supported")
 
     return poly
 
+
+def get_first_nonzero(data_1d):
+    i1, t1 = 0, 0.0
+    for i, d in enumerate(data_1d):
+        if d != 0 or d != 0.0:
+            i1, t1 = i, d
+            break
+    if t1 == 0 or t1 == 0.0:
+        raise LogsamplerError("Time array have only zeroes. Could not logsample!")
+    return i1, t1
+
+
 def logsample(data, **kwargs):
-    dt=     kwargs['dt']     if 'dt'     in kwargs else 1
-    deg=    kwargs['deg']    if 'deg'    in kwargs else 2
-    factor= kwargs['factor'] if 'factor' in kwargs else 1.05
+    tstart = kwargs['tstart'] if 'tstart' in kwargs else 0
+    dt=      kwargs['dt']     if 'dt'     in kwargs else 1
+    deg=     kwargs['deg']    if 'deg'    in kwargs else 2
+    factor=  kwargs['factor'] if 'factor' in kwargs else 1.05
+    time  =  kwargs['time']   if 'time'   in kwargs else None
 
     if data.ndim == 2:
         (nd, nt)=data.shape
@@ -35,19 +56,27 @@ def logsample(data, **kwargs):
         nd = 1
         nt =  data.shape[0]
     else:
-        print("Arrays with ndim>2 are not supported", sys.stderr)
-        return (None, None)
+        raise LogsamplerError("Arrays with ndim = {} >2 are not supported".format(data.ndim))
     datatr = np.transpose(data)
-    tend = dt * nt
-    time = np.linspace(0, tend, nt, endpoint=False)
-    nlog, t = 1, dt
+    if nt <= 1:
+        return time, data
+    if time:
+        tend = time[-1]
+    else:
+        tend = tstart + nt * dt
+        time = np.linspace(tstart, tend, nt, endpoint=False)
+
+    lfirst, tfirst =get_first_nonzero(time)
+
+    # time[1] should exist
+    nlog, t = 1, tfirst
     while t< tend:
         t= t * factor
         if int(t) > nlog:
             nlog+= 1
     logdata= np.zeros((nd,nlog))
     logtime= np.zeros((nlog))
-    l0, l1, ilog, t = 0, 1, 0, dt
+    l0, l1, ilog, t = 0, lfirst, 0, tfirst
     while t< tend*factor:
         t = t * factor
         l2 = int(t)
