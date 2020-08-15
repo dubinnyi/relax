@@ -1,5 +1,8 @@
 #!/usr/bin/python3 -u
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 import h5py
+warnings.resetwarnings()
 
 import numpy as np
 
@@ -8,18 +11,18 @@ from argparse import ArgumentParser
 
 
 def reform(args):
-    file = args.filename
+    filename = args.filename
     output = args.output
     tcf = args.tcf
     gname = args.gname
-    prefix = args.prefix if hasattr(args, 'prefix') else file
+    prefix = args.prefix if args.prefix  else filename
 
     ownfile = False
     out = h5py.File(output, 'w')
 
-    if not hasattr(file, 'read'):
+    if not hasattr(filename, 'read'):
         ownfile = True
-        file = hdfAPI(file, 'r')
+        file = hdfAPI(filename, 'r')
 
     tcfs = tcf if tcf else file.get_tcfList()
     groups = gname if gname else file.get_groupList()
@@ -30,7 +33,7 @@ def reform(args):
     pref.create_dataset('time', data=timeline)
     pref.attrs['type'] = "reform"
 
-    print("Start reform of relaxation groups from file \'{}\' to file \'{}\'".format(file, output))
+    print("Start reform of relaxation groups from file \'{}\' to file \'{}\'".format(filename, output))
     for gname in groups:
         group = pref.create_group(gname)
         group.attrs['type'] = "relaxation group"
@@ -38,7 +41,8 @@ def reform(args):
         for tcf in tcfs:
             if not file.has_group(tcf, gname):
                 continue
-            print("Reforming {}".format(tcf.name))
+            g_shape = file.get_tcf_shape(tcf, gname)
+            print("Reforming {}/{}/{} , shape = {}".format(prefix, gname, tcf, g_shape))
             gtcf = group.create_group(tcf)
             gtcf.attrs['type'] = 'tcf'
             gtcf.attrs['group_size'] = file.get_groupSize(tcf, gname)

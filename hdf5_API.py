@@ -143,6 +143,10 @@ class hdfAPI(File):
     def _get_zeroTrj(self):
         return list(self['/'].values())[0]
 
+    def get_tcf_shape(self, tcf, gname):
+        g = self._get_zeroGroup(tcf, gname)
+        return g['cf'].shape
+
     ### is have
 
     def has_group(self, tcf, gname):
