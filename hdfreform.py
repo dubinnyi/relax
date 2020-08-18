@@ -1,4 +1,6 @@
 #!/usr/bin/python3 -u
+
+import time
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import h5py
@@ -26,6 +28,7 @@ def reform(args):
 
     tcfs = tcf if tcf else file.get_tcfList()
     groups = gname if gname else file.get_groupList()
+    max_group = max([len(g) for g in groups])
 
     timeline = file.get_time()
     pref = out.create_group(prefix)
@@ -33,7 +36,11 @@ def reform(args):
     pref.create_dataset('time', data=timeline)
     pref.attrs['type'] = "reform"
 
-    print("Start reform of relaxation groups from file \'{}\' to file \'{}\'".format(filename, output))
+    print("Start reform of relaxation groups from file \'{}\' to file \'{}\' with prefix \'{}\'".
+          format(filename, output, prefix))
+    time_start = time.monotonic()
+    time_tcf = time_start
+    total_tcf = 0
     for gname in groups:
         group = pref.create_group(gname)
         group.attrs['type'] = "relaxation group"
@@ -42,7 +49,10 @@ def reform(args):
             if not file.has_group(tcf, gname):
                 continue
             g_shape = file.get_tcf_shape(tcf, gname)
-            print("Reforming {}/{}/{} , shape = {}".format(prefix, gname, tcf, g_shape))
+            total_tcf += g_shape[0]
+            folder = "\'{}/{}/{}\'".format(prefix, gname, tcf)
+            shape_str = '{}'.format(g_shape)
+            print("Reforming {:<40} shape = {:>14}".format(folder, shape_str), end = ' ', flush = True)
             gtcf = group.create_group(tcf)
             gtcf.attrs['type'] = 'tcf'
             gtcf.attrs['group_size'] = file.get_groupSize(tcf, gname)
@@ -55,11 +65,18 @@ def reform(args):
             gtcf.create_dataset("smarts", data=file.get_smarts(tcf, gname))
             gtcf.create_dataset("mean", data=mean)
             gtcf.create_dataset("errs", data=std)
+            time_curr = time.monotonic()
+            print(" time = {:7.2f} seconds".format(time_curr - time_tcf))
+            time_tcf = time_curr
+
 
     if ownfile:
         file.close()
     out.close()
+    print("========= FINISHED =========")
     print("Reform of relaxation groups finished")
+    print("Total number of TCFs is {}".format(total_tcf))
+    print("Total time is {:7.2f} seconds".format(time_tcf - time_start))
 
 
 def main():
@@ -68,6 +85,8 @@ def main():
     parser.add_argument('-o', '--output', required=False, type=str, default='out')
     parser.add_argument('--prefix', required=False, type=str)
     parser.add_argument('--tcf', required=False, nargs='*', default='')
+    parser.add_argument('--logsample', type=float, default = 1.0, required=False,
+                        help='Logarithmic sampling of time points')
     parser.add_argument('-g', '--gname', required=False, nargs='*', default='')
     args = parser.parse_args()
     reform(args)
