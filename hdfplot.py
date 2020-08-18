@@ -38,33 +38,20 @@ class HdfPlotError(Exception):
         return self.msg
 
 
-def param_autodetect(param):
-    evenlist = param[0::2]
-    oddlist = param[1::2]
-    tcf_type = None
-    print("evenlist {}".format(evenlist.shape))
-    print("oddlist {}".format(oddlist.shape))
-    if max(oddlist) > max(evenlist):
-        # hint for swapped time/amplitude
-        # acf, time in even indexes, free coeff is last
-        tcf_type = 'acf'
-        print("expall acf")
-        tau = oddlist
-        ampl = evenlist[:-1]
-        coeff = evenlist[-1]
-        print("tau {}".format(tau.shape))
-        print("ampl {}".format(ampl.shape))
+def param_autodetect(params):
+    if params.ndim == 1:
+        coeff = params[0]
+        ampl = params[1::2]
+        tau  = params[2::2]
+    elif params.ndim == 2:
+        coeff = params[:,0]
+        ampl = params[:,1::2]
+        tau  = params[:,2::2]
     else:
-        # hint for swapped time/amplitude
-        # ccf, time in odd indexes, free coeff is last
-        tcf_type = 'ccf'
-        print("expall ccf")
-        tau = evenlist[:-1]
-        ampl = oddlist
-        coeff = evenlist[-1]
-        print("tau {}".format(tau.shape))
-        print("ampl {}".format(ampl.shape))
-    return tau, ampl, coeff, tcf_type
+        print("Error in params_autodetec: ndim = {}, but the number of dimensions should be 1 or 2".
+              format(params.ndim))
+        coeff, ampl, tau = None, None, None
+    return tau, ampl, coeff, None
 
 
 def expall(param, arrtime):
@@ -81,7 +68,7 @@ def main(args):
     parser.add_argument("-f", '--fit-file', required=True, type=str, help='file which content fit result')
     parser.add_argument('-g', '--group', default='NH', help='Which group you want to plot')
     parser.add_argument('--tcf', default='acf', help='Type of correlation function. Can be *acf* or *ccf*')
-    parser.add_argument('--timelines', action='store_true', help='Shoe grid line for each time value')
+    parser.add_argument('--timelines', action='store_true', help='Show grid line for each time value')
     parser.add_argument('--chisqr', action='store_true', help='Shoe grid line for each time value')
     parser.add_argument('--exp-start', default=4, type=int, help='Number of exponents to start from')
     parser.add_argument('--exp-finish', default=6, type=int, help='Number of exponents when finish')
@@ -102,6 +89,10 @@ def main(args):
         names = fd[args.group][args.tcf].attrs['names']
         names = names.splitlines()
 
+    params = {}
+    stats = {}
+    taus = {}
+    ampls = {}
     with h5py.File(args.fit_file, 'r') as fd:
         group_list = [g for g in fd]
         if not args.group in group_list:
@@ -119,17 +110,11 @@ def main(args):
             raise HdfPlotError("Exponents '{}' not found in {}/{}".format(" ".join(exps_args),
                                                              args.fit_file, args.group))
         print("exps in file: {}".format(exps_infile))
-        params = {}
-        stats = {}
-        taus = {}
         for exp in exps_infile:
             params[exp] = fd_exps[exp]['params'][:]
             stats[exp] = fd_exps[exp]['stats'][:]
-            auto_pars = param_autodetect(params[exp][0, :])
-            if auto_pars[-1] == 'acf':
-                taus[exp] = params[exp][:, 1::2]
-            else:
-                taus[exp] = params[exp][:, 0:-1:2]
+            taus[exp], ampls[exp], coeff, tcf_type = param_autodetect(params[exp])
+
             # print("params[{}].shape: {}".format(exp, params[exp].shape))
             # print("stats[{}].shape: {}".format(exp, stats[exp].shape))
         # exp4=np.array(fd.get('{}/exp4/params'.format(args.group)))
@@ -167,7 +152,7 @@ def main(args):
             # label6 = '6 exps {:>7.2f}'.format(stat6[res][2])
         # else:
         #     (label4, label5, label6) = ('4 exps', '5 exps', '6 exps')
-        print("labels: {}".format(labels))
+        # print("labels: {}".format(labels))
 
         fig, ax = plt.subplots(1, 2, figsize=(10, 5))
         fig.suptitle(names[res])
@@ -227,6 +212,7 @@ def main(args):
                                   time[:ntime])[1:],
                            label=labels[exp], zorder=10, color=colors[exp])
         ax[1].set_ylim(ylim)
+        ax[1].set_xlim((time[1],time[ntime]))
         ax[1].legend()
         plt.show()
         plt.close()
