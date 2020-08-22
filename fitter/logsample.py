@@ -60,7 +60,7 @@ def logsample(data, **kwargs):
     datatr = np.transpose(data)
     if nt <= 1:
         return time, data
-    if time:
+    if time is not None:
         tend = time[-1]
     else:
         tend = tstart + nt * dt

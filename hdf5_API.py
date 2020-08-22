@@ -6,6 +6,7 @@ import sys
 import numpy as np
 
 from h5py import File, Group
+from fitter.logsample import logsample
 
 
 filename_re = re.compile(r'^(?P<filename>\S+\.((hdf5?)|(csv)|(npy)))(?P<path_in_file>\/\S*)?$')
@@ -236,10 +237,24 @@ class hdfAPI(File):
         g = self._get_zeroGroup(tcf, gname)
         mean = np.zeros(g['cf'].shape)
         partial_sum_squares = np.zeros(g['cf'].shape)
-        trjCount = self.get_trjCount()
         if tcf and gname:
             arr = self.array_tcf(tcf, gname)
-        return np.mean(arr, axis=0), np.std(arr, axis=0, ddof=1) / np.sqrt(trjCount - 1)
+        return self.mean_arr(arr)
 
-    def logsampling(self):
-        pass
+    def mean_arr(self, arr):
+        return np.mean(arr, axis=0), np.std(arr, axis=0, ddof=1) / np.sqrt(arr.shape[0] - 1)
+
+    def logsampling(self, tcf='', gname=''):
+        arr = None
+        timeline = None
+        for i, g in enumerate(self.group_iter(tcf, gname, True)):
+            time_res, data_res = logsample(data=g['cf'], time=self.get_time())
+            if arr is None:
+                trjCount = self.get_trjCount()
+                arr = np.zeros((trjCount, *data_res.shape))
+                timeline = time_res
+            arr[i] = data_res[:]
+        return arr, timeline
+
+
+
