@@ -62,7 +62,7 @@ def reform(args):
 
             if args.mean and not args.logsample:
                 mean, std = file.mean_tcf(tcf, gname)
-            elif args.logsamle:
+            elif args.logsample:
                 log_arr, timeline = file.logsampling(tcf, gname)
                 if args.mean:
                     mean, std = file.mean_arr(log_arr)
