@@ -45,10 +45,10 @@ def get_first_nonzero(data_1d):
 
 def logsample(data, **kwargs):
     tstart = kwargs['tstart'] if 'tstart' in kwargs else 0
-    dt=      kwargs['dt']     if 'dt'     in kwargs else 1
-    deg=     kwargs['deg']    if 'deg'    in kwargs else 2
-    factor=  kwargs['factor'] if 'factor' in kwargs else 1.05
-    time  =  kwargs['time']   if 'time'   in kwargs else None
+    dt     = kwargs['dt']     if 'dt'     in kwargs else 1
+    deg    = kwargs['deg']    if 'deg'    in kwargs else 2
+    factor = kwargs['factor'] if 'factor' in kwargs else 1.05
+    time   = kwargs['time']   if 'time'   in kwargs else None
 
     if data.ndim == 2:
         (nd, nt)=data.shape
@@ -70,37 +70,37 @@ def logsample(data, **kwargs):
 
     # time[1] should exist
     nlog, t = 1, tfirst
-    while t< tend:
-        t= t * factor
-        if int(t) > nlog:
-            nlog+= 1
-    logdata= np.zeros((nd,nlog))
-    logtime= np.zeros((nlog))
-    l0, l1, ilog, t = 0, lfirst, 0, tfirst
-    while t< tend*factor:
+    while t < tend:
         t = t * factor
-        l2 = int(t)
+        if int(t/tfirst) > nlog:
+            nlog += 1
+    logdata = np.zeros((nd, nlog))
+    logtime = np.zeros((nlog))
+    l0, l1, ilog, t = 0, lfirst, 0, tfirst
+    while t < tend*factor:
+        t = t * factor
+        l2 = int(t/tfirst)
         if l2 <= l1:
             continue
         #if int(t) > l0:
         #    break
         #print("(l0, l1) = ({},{})".format(l0,l1))
-        subt= time[l0:l1]
-        tmean= np.mean(subt)
-        subdata= datatr[l0:l1,:] if data.ndim == 2 else datatr[l0:l1]
+        subt = time[l0:l1]
+        tmean = np.mean(subt)
+        subdata = datatr[l0:l1,:] if data.ndim == 2 else datatr[l0:l1]
         deg_fit = min(subt.shape[0]-1,deg)
         #print('subt.shape = {}'.format(subt.shape))
         #print('subdata.shape = {}'.format(subdata.shape))
         p = np.polyfit(subt, subdata, deg=deg_fit)
         #print("p.shape = {}".format(p.shape))
-        datamean= calc_poly(p, tmean)
+        datamean = calc_poly(p, tmean)
         #print("datamean.shape = {}".format(datamean.shape))
-        logtime[ilog]= tmean
-        logdata[:,ilog]= datamean
-        (l0, l1)= (l1, l2)
-        if l1> nt:
-            l1= nt
-        ilog+= 1
+        logtime[ilog] = tmean
+        logdata[:, ilog] = datamean
+        (l0, l1) = (l1, l2)
+        if l1 > nt:
+            l1 = nt
+        ilog += 1
     if data.ndim == 1:
         logdata = logdata[0]
     return logtime, logdata
@@ -111,7 +111,7 @@ def test_logsample():
     nfunc= 3
     sigma = 0.05
     factor = 1.05
-    
+
     data =  np.zeros((nfunc + 1, nt))
     noise = np.zeros((nfunc + 1, nt))
     t=np.linspace(0,nt-1,nt)

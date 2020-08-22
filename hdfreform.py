@@ -8,13 +8,13 @@ warnings.resetwarnings()
 
 import numpy as np
 
-from hdf5_API import hdfAPI
+from hdf5_API import hdfAPI, get_filenamePath
 from argparse import ArgumentParser
 
 
 def reform(args):
-    filename = args.filename
-    output = args.output
+    filename, path = get_filenamePath(args.filename)
+    output, out_path = get_filenamePath(args.output)
     tcf = args.tcf
     gname = args.gname
     prefix = args.prefix if args.prefix  else filename
@@ -32,12 +32,12 @@ def reform(args):
 
     timeline = file.get_time()
     pref = out.create_group(prefix)
-    
+
     pref.create_dataset('time', data=timeline)
     pref.attrs['type'] = "reform"
 
     print("Start reform of relaxation groups from file \'{}\' to file \'{}\' with prefix \'{}\'".
-          format(filename, output, prefix))
+          format(file.filename, output, prefix))
     time_start = time.monotonic()
     time_tcf = time_start
     total_tcf = 0

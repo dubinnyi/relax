@@ -10,12 +10,12 @@ from fitter.exp_model import CModel, Prefixes
 from fitter.fit_res import FitResult
 from fitinfo import FitInfo
 
-BASE_VAL = np.array([0.1, 0.01, 5,    0.01, 10, 0.001, 50,
-                          0.01, 100,  0.01, 1000, 0.01, 2000,
-                          0.01, 3000, 0.01, 4000, 0.01, 5000])
-BASE_KEY = ('c', 'aamplitude', 'adecay', 'bamplitude', 'bdecay', 'camplitude', 'cdecay',
-            'damplitude', 'ddecay', 'eamplitude', 'edecay', 'famplitude', 'fdecay',
-            'gamplitude', 'gdecay','hamplitude', 'hdecay','iamplitude', 'idecay')
+BASE_VAL = np.array([0.1, 5,    0.01, 10,   0.01,  50,   0.01,
+                          100,  0.01, 1000, 0.01,  2000, 0.01,
+                          3000, 0.01, 4000, 0.01,  5000, 0.01])
+BASE_KEY = ('c', 'adecay', 'aamplitude', 'bdecay', 'bamplitude', 'cdecay', 'camplitude',
+            'ddecay', 'damplitude', 'edecay', 'eamplitude', 'fdecay', 'famplitude',
+            'gdecay', 'gamplitude','hdecay', 'hamplitude','idecay', 'iamplitude')
 
 rndmizer = np.random.RandomState()
 
@@ -218,10 +218,10 @@ class Fitter:
         if bestFit_once:
             self.log_info.info("{}: fit_report() is:\n{}".format(name_string_exp, bestFit_once.fit_report()))
             params = bestFit_once.best_values
-            summ_of_amplitudes = params['c']
+            summ_of_decays = params['c']
             for e in range(1, self.cexp + 1):
-                summ_of_amplitudes += params['{}amplitude'.format(Prefixes[e])]
-            self.log_info.info("Sum of amplitudes = {}".format(summ_of_amplitudes))
+                summ_of_decays += params['{}decay'.format(Prefixes[e])]
+            self.log_info.info("Sum of decays = {}".format(summ_of_decays))
 
         else:
             self.log_info.info("{}: NO RESULT".format(name_string_exp))

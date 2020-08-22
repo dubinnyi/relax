@@ -1,11 +1,14 @@
 #!/usr/pin/python3 -u
 
+import re
 import sys
 
 import numpy as np
 
 from h5py import File, Group
 
+
+filename_re = re.compile(r'^(?P<filename>\S+\.((hdf5?)|(csv)|(npy)))(?P<path_in_file>\/\S*)?$')
 
 class hdfError(Exception):
     def __init__(self, msg, *args, **kwargs):
@@ -15,11 +18,21 @@ class hdfError(Exception):
     def __str__(self):
         return self.msg
 
+def get_filenamePath(filename):
+    if filename_re.search(filename):
+        res = filename_re.match(filename)
+        fname = res['filename']
+        path = res['path_in_file'] if res['path_in_file'] else '/'
+        return fname, path
+
+# def set_newSelf(fd):
+    # return fd
 
 class hdfAPI(File):
     """docstring for Hdf_API"""
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        fname, self._path = get_filenamePath(args[0])
+        super().__init__(fname, mode=args[1], **kwargs)
         self.trj_list = []
         self.tcf_list = []
         self.grp_list = []
@@ -27,7 +40,7 @@ class hdfAPI(File):
     ### Iterators
 
     def trj_iter(self):
-        for key, item in self['/'].items():
+        for key, item in self[self._path].items():
             yield key, item
 
     # use 'acf' or 'ccf' to iterate trough
@@ -77,17 +90,17 @@ class hdfAPI(File):
         return timeline[1] - timeline[0]
 
     def get_names(self, tcf, gname):
-        items = list(self['/'].values())
+        items = list(self[self._path].values())
         names = items[0][tcf][gname]['names'][()]
         return names
 
     def get_atoms(self, tcf, gname):
-        items = list(self['/'].values())
+        items = list(self[self._path].values())
         atoms = items[0][tcf][gname]['atoms'][()]
         return atoms
 
     def get_smarts(self, tcf, gname):
-        items = list(self['/'].values())
+        items = list(self[self._path].values())
         smarts = items[0][tcf][gname]['smarts'][()]
         return smarts
 
@@ -97,13 +110,13 @@ class hdfAPI(File):
     def get_groupList(self, tcf='', traj_name=''):
         wrong_names = []
         if traj_name and tcf:
-            groups = list(self['/'][traj_name][tcf].keys())
+            groups = list(self[self._path][traj_name][tcf].keys())
 
             for gname in groups:
-                if not isinstance(self['/'][traj_name][tcf][gname], (str, Group)):
+                if not isinstance(self[self._path][traj_name][tcf][gname], (str, Group)):
                     wrong_names.append(gname)
         elif tcf:
-            items = list(self['/'].values())
+            items = list(self[self._path].values())
             groups = list(items[0][tcf].keys())
 
             for gname in groups:
@@ -120,7 +133,7 @@ class hdfAPI(File):
         return sorted(groups)
 
     def get_trjList(self):
-        return self['/'].keys()
+        return self[self._path].keys()
 
     def get_tcfList(self):
         return self._get_zeroTrj().keys()
@@ -141,7 +154,7 @@ class hdfAPI(File):
         raise hdfError("ERROR!! {} not in {}".format(gname, tcf))
 
     def _get_zeroTrj(self):
-        return list(self['/'].values())[0]
+        return list(self[self._path].values())[0]
 
     def get_tcf_shape(self, tcf, gname):
         g = self._get_zeroGroup(tcf, gname)
@@ -227,3 +240,6 @@ class hdfAPI(File):
         if tcf and gname:
             arr = self.array_tcf(tcf, gname)
         return np.mean(arr, axis=0), np.std(arr, axis=0, ddof=1) / np.sqrt(trjCount - 1)
+
+    def logsampling(self):
+        pass

@@ -1,4 +1,6 @@
 #!/usr/bin/python3 -u
+
+import re
 import sys
 import h5py
 import copy
@@ -10,6 +12,7 @@ import utils as u
 
 from fitter.fitting import Fitter
 from fitter.fit_res import REFERENCE_PARAMS_SEQ
+from hdf5_API import get_filenamePath
 from counter import Counter
 
 from argparse import ArgumentParser
@@ -20,10 +23,13 @@ NCPU = cpu_count()
 
 #os.system("taskset -p 0xff %d" % os.getpid())
 
+
+
 def load_data(args, group):
     (time, func, errs, names) = (None, None, None, None)
+    filename, path = get_filenamePath(args.filename)
     if args.type == 'npy':
-        with open(args.filename, 'rb') as fd:
+        with open(filename, 'rb') as fd:
 
             time = np.load(fd)
             func = np.load(fd)
@@ -34,7 +40,7 @@ def load_data(args, group):
 
 
     elif args.type == 'csv':
-        data = np.loadtxt(args.filename, delimiter=',')
+        data = np.loadtxt(filename, delimiter=',')
         time = data[:, 0]
         func = [ data[:, 1] ]
         errs = [ np.sqrt(data[:, 2]) ]
@@ -43,7 +49,8 @@ def load_data(args, group):
         errs[0] = errs[1]
 
     elif args.type == 'hdf':
-        with h5py.File(args.filename, 'r') as fd:
+        with h5py.File(filename, 'r') as fd:
+            fd = u.open_folderInHdf(fd, path)
             if group not in fd.keys():
                 raise Exception("Wrong groupname")
             time = fd['time'][:]
@@ -109,7 +116,9 @@ def main():
     parser.add_argument('--ncpu',type=int, help='number of cpu (DEBUG)', default = NCPU)
     # parser.add_argument('--lm', required=False, action='store_true', help='enable silent mode (DEBUG)')
     args = parser.parse_args()
-    fid = h5py.File(args.output, 'w')
+    output, out_path = get_filenamePath(args.output)
+    fid = h5py.File(output, 'w')
+    fid = u.open_folderInHdf(fid, out_path)
     counter = Counter()
 
     start=t.monotonic()
