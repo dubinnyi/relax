@@ -3,8 +3,10 @@ import h5py
 import numpy as np
 
 
-# ftype - [npy, hdf5, csv]
-# perm -  [w, r]
+# filename_re = re.compile(r'^(?P<filename>\S+\.hdf5?)(?P<path_in_file>\/\S+)?$')
+
+# ftype - [npy, hdf, csv]
+# perm -  [w, r, r+(not for npy)]
 def get_fid(file, ftype, perm):
     own_fid = False
     if isinstance(file, basestring):
@@ -12,7 +14,7 @@ def get_fid(file, ftype, perm):
             file = file + '.{}'.format(ftype)
         if ftype == 'npy':
             fid = open(file, "{}b".format(perm))
-        elif ftype == 'hdf5':
+        elif ftype == 'hdf':
             fid = h5py.File(file, perm)
         elif ftype == 'csv':
             fid = open(file, perm)
@@ -23,7 +25,7 @@ def get_fid(file, ftype, perm):
             file = file.parent / (file.name + '.{}'.format(ftype))
             if ftype == 'npy':
                 fid = file.open("{}b".format(perm))
-            elif ftype == 'hdf5':
+            elif ftype == 'hdf':
                 fid = h5py.File(file, perm)
             elif ftype == 'csv':
                 fid = file.open(perm)
@@ -31,6 +33,17 @@ def get_fid(file, ftype, perm):
     else:
         fid = file
     return fid, own_fid
+
+def open_folderInHdf(fd, path):
+    return fd[path]
+
+
+# def get_filenamePath(filename):
+#     if filename_re.search(filename):
+#         res = filename_re.match(filename)
+#         fname = res['filename']
+#         path = res['path_in_file']
+#         return fname, path
 
 
 def splitCamelCase(name, toLowerCase=True):

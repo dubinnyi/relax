@@ -2,6 +2,7 @@
 import sys
 import h5py
 
+import time as t
 import numpy as np
 import lmfit as lm
 import utils as u
@@ -30,8 +31,8 @@ def load_data(args, group):
     elif args.type == 'csv':
         data = np.loadtxt(args.filename, delimiter=',')
         time = data[:, 0]
-        func = [ data[:, 1] ]
-        errs = [ np.sqrt(data[:, 2]) ]
+        func = [data[:, 1]]
+        errs = [np.sqrt(data[:, 2])]
         names = [args.filename]
         # ОЧЕНЬ ВАЖНО!!
         errs[0] = errs[1]
@@ -61,7 +62,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("filename", type=str)
     parser.add_argument('-t', '--type', default='npy', help="Type of using datafile. Can be: \'npy\', \'csv\', \'hdf\'")
-    parser.add_argument('-i', '--istart', default=0, type=int, help='index in data array for start with (DEBUG)')
+    parser.add_argument('-i', '--idata', type=str, help='index in data array for fit, e.g. 0-1')
     parser.add_argument('-s', '--exp-start', default=4, type=int, help='Number of exponents to start from')
     parser.add_argument('-f', '--exp-finish', default=6, type=int, help='Number of exponents when finish')
     parser.add_argument('-n', '--ntry', default=5, type=int, help='Number of tryings (for method NexpNtry)')
@@ -73,23 +74,31 @@ def main():
                          help='time in ps which need to be cut from timeline')
     args = parser.parse_args()
     counter = Counter()
-    fitMod = Fitter(logger=counter.add_fitInfo, minexp=args.exp_start, maxexp=args.exp_finish, ntry=args.ntry)
+    fitMod = Fitter(logger=counter.add_fitInfo, minexp=args.exp_start, maxexp=args.exp_finish,
+                    ntry=args.ntry, tcf_type=args.tcf)
     counter.set_curMethod(args.method)
     counter.set_curTcf(args.tcf)
     fid = h5py.File(args.output, 'w')
 
+    start=t.monotonic()
     for group in args.group:
         counter.set_curGroup(group)
-        time, data, errs, names = load_data(args, group)
-        time, data, errs = prepare_data(time, data, errs, args.time_cut)
-        data_size = data.shape[0]
+        try:
+            time, data, errs, names = load_data(args, group)
+            time, data, errs = prepare_data(time, data, errs, args.time_cut)
+        except Exception as e:
+            print(e)
+            continue
 
+        data_size = data.shape[0]
 
     ## Prepare file for saving results
         grp = fid.create_group(group)
+        tcf_grp = grp.create_group(args.tcf)
         exps = []
         for i in fitMod.exp_iter():
-            cexp = grp.create_group('exp{}'.format(i))
+            cexp = tcf_grp.create_group('exp{}'.format(i))
+            cexp.attrs['param_names'] = fitMod.param_names(i)
             exps.append(cexp)
         for exp_grp, i in zip(exps, range(args.exp_start, args.exp_finish + 1)):
             nparams = 2 * i + 1
@@ -97,20 +106,36 @@ def main():
             exp_grp.create_dataset('covar', data=np.zeros((data_size, nparams, nparams)))
             exp_grp.create_dataset('stats', data=u.create_nameArray(data_size, STAT_PARAMS_NAMES))
 
-        start = args.istart if args.istart < data_size else 0
-        for i in range(start, data_size):
+        if args.idata:
+            s = args.idata.split('-')
+            if len(s) == 1:
+                fit_start = int(s[0])
+                fit_end = fit_start + 1
+            elif len(s) >= 2:
+                fit_start = int(s[0])
+                fit_end = int(s[1]) + 1
+            else:
+                fit_start = 0
+                fit_end = data_size
+            fit_start = 0 if fit_start < 0 else fit_start
+            fit_end = data_size if fit_end > data_size else fit_end
+        else:
+            fit_start = 0
+            fit_end = data_size
+
+        #start = args.istart if args.istart < data_size else 0
+        for i in range(fit_start, fit_end):
             # set name, not index
             counter.set_curN(names[i])
             name_string = "{:10} {:25}".format(group, names[i])
-            bestRes = fitMod.fit(data[i], errs[i], time, method=args.method, name_string = name_string)
+            bestRes = fitMod.fit(data[i], errs[i], time, method=args.method, name_string=name_string)
 
             try:
-
                 for group_hdf, res in zip(exps, bestRes):
                     if res.success:
                         # print(res)
                         group_hdf['params'][i] = res.param_vals
-                        group_hdf['covar'][i]  = res.covar
+                        group_hdf['covar'][i] = res.covar
                         ## !!! ОЧЕНЬ УПОРОТЫЙ МЕТОД ИЗ-ЗА НЕВОЗМОЖНОСТИ ПОЭЛЕМЕНТНОЙ ЗАМЕНЫ ЭЛЕМЕНТОВ ДАТАСЕТА.
                         stat_list = []
                         for key in STAT_PARAMS_NAMES:
@@ -121,14 +146,14 @@ def main():
                         ## КОНЕЦ УПОРОТОГО МОМЕНТА
                     else:
                         print("{}: fit failed".format(name_string), file=sys.stderr)
-                        #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
             except Exception as e:
                 print("{}: ERROR in fit".format(name_string), file=sys.stderr)
                 print(type(e), e, file=sys.stderr)
-                #print('This happend on {} iteration {}'.format(i, '' if args.type != 'hdf' else 'in group: {}'.format(group)), file=sys.stderr)
 
             print("{}: DONE".format(name_string))
+    finish = t.monotonic()
+    counter.set_overalltime(finish-start)
     counter.save('fitStatistic.csv')
     print(counter)
     # fitMod.save_toFile('out')
