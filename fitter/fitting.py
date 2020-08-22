@@ -153,6 +153,7 @@ class Fitter:
         #################
         return self.model.fit(data=y, x=x, method='least_squares', weights=1/self.std, nan_policy='omit', scale_covar=False, **init_values, tcf_type=self.tcf_type)
 
+
     def fit_NtryNexp(self):
         self.prep_model()
         bestFit_ntry = None
