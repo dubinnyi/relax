@@ -62,9 +62,10 @@ def reform(args):
 
             if args.mean and not args.logsample:
                 mean, std = file.mean_tcf(tcf, gname)
-            elif args.mean:
+            elif args.logsamle:
                 log_arr, timeline = file.logsampling(tcf, gname)
-                mean, std = file.mean_arr(log_arr)
+                if args.mean:
+                    mean, std = file.mean_arr(log_arr)
 
                 if args.store_all:
                     gtcf.create_dataset("logsample_traj", data=log_arr)
@@ -76,8 +77,9 @@ def reform(args):
             gtcf.create_dataset("names", data=file.get_names(tcf, gname))
             gtcf.create_dataset("atoms", data=file.get_atoms(tcf, gname))
             gtcf.create_dataset("smarts", data=file.get_smarts(tcf, gname))
-            gtcf.create_dataset("mean", data=mean)
-            gtcf.create_dataset("errs", data=std)
+            if args.mean:
+                gtcf.create_dataset("mean", data=mean)
+                gtcf.create_dataset("errs", data=std)
             time_curr = time.monotonic()
             print(" time = {:7.2f} seconds".format(time_curr - time_tcf))
             time_tcf = time_curr
