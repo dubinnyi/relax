@@ -19,7 +19,9 @@ from guppy import hpy; h=hpy()
 def f(t, params):
     """A powerlaw: a * e**(t*b)"""
     assert(len(params) == (2 * 5 + 1))
-    return np.multiply(np.vstack(params[::2]), np.multiply(np.exp(-t), np.vstack(np.exp(-params[1::2])))) + params[-1]
+    arr = np.sum(np.multiply(np.vstack(params[:-1:2]), np.exp(np.multiply(-t, np.vstack(params[1:-1:2]))))) + params[-1]
+    # print('arr: {}'.format(arr.shape))
+    return arr
 
 
 # np.array(1), np.array(1) -> np.array(2)
@@ -29,36 +31,40 @@ def df(t, params):
     """
     # assert(t[0] > 0)
     assert(len(params) == 2*5+1)
-    a = -np.vstack(params[:-1:2])
-    b = -np.vstack(np.exp(params[1:-1:2]))
+    a = np.vstack(params[:-1:2])
+    b = np.vstack(params[1:-1:2])
     t = -t
 
     dfd_lam = np.zeros((len(params), len(t)))
-    dfd_lam[:-1:2] = a * np.multiply(t, np.exp(t) * np.exp(b)) # list of N numbers
-    dfd_lam[1:-1:2] = np.multiply(тp.exp(t), np.exp(b)) # list of N numbers
+    # df/da
+    dfd_lam[:-1:2] = np.exp(np.multiply(t, b))
+    # df/db
+    dfd_lam[1:-1:2] = a * np.multiply(t, np.exp(np.multiply(t, b)))
+    # df/dc
+    dfd_lam[-1] = 1
     return dfd_lam
 
 # np.array(1), np.array(1) -> np.array(3!)
 def d2f(t, params):
     """Return Hessian of powerlaw"""
-    a = -np.vstack(params[:-1:2])
-    b = -np.vstack(np.exp(params[1:-1:2]))
-
+    a = np.vstack(params[:-1:2])
+    b = np.vstack(np.exp(params[1:-1:2]))
+    t = -t
 
     d2f = np.zeros((len(params), len(params), len(t)))
 
     # d2f / da da
     # df2[0,0] = np.zeroes(np.shape(t)) #(already there)
 
-    # d2f / da db
+    # d2f / da_i db_i
     di = np.diag_indices(len(params))
-    d2f[di[0][:-1:2], di[1][1:-1:2]] = np.multiply(t, np.exp(t) * b)
+    d2f[di[0][:-1:2], di[1][1:-1:2]] = np.multiply(t, np.exp(np.multiply(t, b)))
 
-    # d2f / db da
+    # d2f / db_i da_i
     d2f[di[0][1:-1:2], di[1][:-1:2]]  = d2f[di[0][:-1:2], di[1][1:-1:2]]
 
-    # d2f / db db
-    d2f[di[0][1:-1:2], di[1][1:-1:2]]  = np.multiply(a*(t)**2, np.exp(t) * b)
+    # d2f / db_i db_i
+    d2f[di[0][1:-1:2], di[1][1:-1:2]]  = np.multiply(a*(t)**2, np.exp(np.multiply(t, b)))
 
     return d2f
 
@@ -82,18 +88,24 @@ def read_in_data(load_base_path):
     trajectories = []
     time = []
 
-    if not load_base_path:
-        error("Specify base path to folder with data to fit. Each file having two colums, <time, trajectory>.\n")
+    # if not load_base_path:
+    #     error("Specify base path to folder with data to fit. Each file having two colums, <time, trajectory>.\n")
 
-    fileNames = glob.glob(load_base_path + "/*")
-    # fileNames = os.listdir("load_base_path")
+    # fileNames = glob.glob(load_base_path + "/*")
+    # # fileNames = os.listdir("load_base_path")
 
-    if not fileNames:
-        error("Specify <base path> to data files. No files found!\n")
+    # if not fileNames:
+    #     error("Specify <base path> to data files. No files found!\n")
 
-    for i, fileName in enumerate(fileNames):
-        df = np.load(fileName)
-    time, trajectories = df['time'], df['trajectories']
+    # for i, fileName in enumerate(fileNames):
+    #     df = np.load(fileName)
+    # # time, trajectories = df['time'], df['trajectories']
+
+    fileName = sys.argv[1]
+    trajectories = np.load(fileName)
+    time = np.linspace(0, 1000, 2000)
+
+
     return time, trajectories
     # for i, fileName in enumerate(fileNames):
     #     f = open(fileName,'r')
@@ -143,7 +155,8 @@ def main(args):
     M, N = np.shape(trajectories)
 
     min_method = "nm"           # Use Nelder-Mead minimization method
-    guess=np.array([.5,.5])     # Starting point in parameter space
+    guess=np.array([0.1, 5,    0.01, 10,   0.01,  50,   0.01,
+                          100,  0.01, 1000, 0.01])     # Starting point in parameter space
 
     #### OPTIONAL: Find index of first time to include in fitting procedure
     starttime = 200              # first time point to include in fitting
@@ -176,7 +189,7 @@ def main(args):
     wlsice.init(f, df, d2f)
 
     # Perform the actual fit
-    params, sigma, chi2_min = wlsice.fit(time, trajectories, guess, min_method, bounds)
+    params, sigma, chi2_min = wlsice.fit(time, trajectories, guess, min_method)
 
     # RESULT:
     print("# trajectories M=%s,\tsampling times N=%s, t_0=%s" % (M, N, time[0]))

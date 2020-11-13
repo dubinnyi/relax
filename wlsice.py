@@ -132,6 +132,7 @@ def chi2(params, t, y, R):
     """
     Y = f(t, params)
     delta = np.subtract(y, Y)
+    # print('delta: {}, R: {}'.format(delta.shape, R.shape))
     ans = np.dot(np.dot(delta, R), delta)
     return ans
 
